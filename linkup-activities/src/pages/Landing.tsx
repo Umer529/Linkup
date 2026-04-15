@@ -1,9 +1,14 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Users, Calendar, MapPin, Sparkles, Star } from 'lucide-react';
+import { ArrowRight, Sparkles, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { categories, testimonials } from '@/lib/mock-data';
+import { testimonials } from '@/lib/mock-data';
+import { useCategories } from '@/hooks/useCategories';
+import { Category } from '@/lib/types';
+import SkeletonCard from '@/components/SkeletonCard';
 
 const Landing = () => {
+  const { data: categories = [], isLoading: categoriesLoading } = useCategories();
+
   return (
     <div className="min-h-screen">
       {/* Hero */}
@@ -25,8 +30,7 @@ const Landing = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/explore">
                 <Button size="lg" className="gradient-bg text-primary-foreground border-0 btn-glow text-base px-8 h-12 w-full sm:w-auto">
-                  Explore Activities
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  Explore Activities <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
               <Link to="/create">
@@ -37,7 +41,6 @@ const Landing = () => {
             </div>
           </div>
 
-          {/* Stats */}
           <div className="mt-16 grid grid-cols-3 gap-4 max-w-lg mx-auto">
             {[
               { value: '12K+', label: 'Active Users' },
@@ -75,24 +78,30 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Categories */}
+      {/* Categories — live from API */}
       <section className="py-20">
         <div className="container mx-auto px-4">
           <h2 className="font-display text-3xl md:text-4xl font-bold text-center mb-4">Trending Categories</h2>
           <p className="text-muted-foreground text-center mb-12">Find your people, find your thing</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 max-w-4xl mx-auto">
-            {categories.map((cat) => (
-              <Link
-                to={`/explore?category=${cat.name}`}
-                key={cat.id}
-                className="bg-card rounded-2xl p-4 border border-border card-hover text-center group"
-              >
-                <div className="text-3xl mb-2">{cat.icon}</div>
-                <div className="font-medium text-sm">{cat.name}</div>
-                <div className="text-xs text-muted-foreground mt-1">{cat.count} activities</div>
-              </Link>
-            ))}
-          </div>
+          {categoriesLoading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 max-w-4xl mx-auto">
+              {Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={i} />)}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 max-w-4xl mx-auto">
+              {categories.map((cat: Category) => (
+                <Link
+                  to={`/explore?category=${cat.name}`}
+                  key={cat.id}
+                  className="bg-card rounded-2xl p-4 border border-border card-hover text-center group"
+                >
+                  <div className="text-3xl mb-2">{cat.icon}</div>
+                  <div className="font-medium text-sm">{cat.name}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{cat.count} activities</div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -104,7 +113,7 @@ const Landing = () => {
             {testimonials.map((t) => (
               <div key={t.name} className="bg-card rounded-2xl p-6 border border-border card-hover">
                 <div className="flex gap-1 mb-4">
-                  {[1,2,3,4,5].map(i => <Star key={i} className="h-4 w-4 fill-warning text-warning" />)}
+                  {[1, 2, 3, 4, 5].map((i) => <Star key={i} className="h-4 w-4 fill-warning text-warning" />)}
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">"{t.quote}"</p>
                 <div className="flex items-center gap-3">
@@ -127,8 +136,7 @@ const Landing = () => {
           <p className="text-muted-foreground mb-8 max-w-md mx-auto">Join thousands of people making real connections through shared activities.</p>
           <Link to="/explore">
             <Button size="lg" className="gradient-bg text-primary-foreground border-0 btn-glow text-base px-8 h-12">
-              Get Started Free
-              <ArrowRight className="ml-2 h-5 w-5" />
+              Get Started Free <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
         </div>

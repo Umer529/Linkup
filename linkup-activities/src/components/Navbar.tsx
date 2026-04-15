@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Search, Bell, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { currentUser } from '@/lib/mock-data';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -59,11 +58,9 @@ const Navbar = () => {
               </Button>
             </Link>
             <Link to="/profile">
-              <img
-                src={currentUser.avatar}
-                alt={currentUser.name}
-                className="w-8 h-8 rounded-full object-cover ring-2 ring-border hover:ring-primary transition-all"
-              />
+              <div className="w-8 h-8 rounded-full gradient-bg flex items-center justify-center ring-2 ring-border hover:ring-primary transition-all">
+                <span className="text-primary-foreground font-bold text-xs">U</span>
+              </div>
             </Link>
           </div>
 

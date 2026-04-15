@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { Users, Activity, Flag, BarChart3, Search, MoreHorizontal, Eye, Trash2, CheckCircle } from 'lucide-react';
+import { Users, Activity, Flag, BarChart3, Search, Eye, Trash2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { activities } from '@/lib/mock-data';
+import SkeletonCard from '@/components/SkeletonCard';
+import { useActivities, useDeleteActivity } from '@/hooks/useActivities';
+import { Activity as ActivityType } from '@/lib/types';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 
 const stats = [
   { label: 'Total Users', value: '12,483', icon: Users, change: '+12%' },
@@ -23,9 +26,17 @@ const Admin = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'activities' | 'reports'>('overview');
   const [search, setSearch] = useState('');
 
-  const filteredActivities = activities.filter((a) =>
-    !search || a.title.toLowerCase().includes(search.toLowerCase())
-  );
+  const { data: activities = [], isLoading } = useActivities({ search: search || undefined });
+  const deleteActivity = useDeleteActivity();
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteActivity.mutateAsync(id);
+      toast.success('Activity removed');
+    } catch {
+      toast.error('Failed to remove activity');
+    }
+  };
 
   return (
     <div className="min-h-screen pb-20 md:pb-0">
@@ -33,7 +44,6 @@ const Admin = () => {
         <h1 className="font-display text-2xl md:text-3xl font-bold mb-1">Admin Dashboard</h1>
         <p className="text-muted-foreground text-sm mb-6">Manage your platform</p>
 
-        {/* Tabs */}
         <div className="flex gap-1 bg-muted rounded-xl p-1 mb-8 max-w-md">
           {(['overview', 'activities', 'reports'] as const).map((t) => (
             <button
@@ -48,7 +58,6 @@ const Admin = () => {
           ))}
         </div>
 
-        {/* Overview */}
         {activeTab === 'overview' && (
           <div className="animate-fade-in">
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -68,8 +77,6 @@ const Admin = () => {
                 );
               })}
             </div>
-
-            {/* Chart placeholder */}
             <div className="bg-card rounded-2xl border border-border p-6 mb-8">
               <h3 className="font-display font-semibold mb-4">User Engagement (Last 7 Days)</h3>
               <div className="flex items-end gap-2 h-40">
@@ -77,7 +84,7 @@ const Admin = () => {
                   <div key={i} className="flex-1 flex flex-col items-center gap-1">
                     <div className="w-full rounded-t-lg gradient-bg transition-all" style={{ height: `${v}%` }} />
                     <span className="text-[10px] text-muted-foreground">
-                      {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i]}
+                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i]}
                     </span>
                   </div>
                 ))}
@@ -86,7 +93,6 @@ const Admin = () => {
           </div>
         )}
 
-        {/* Activities Management */}
         {activeTab === 'activities' && (
           <div className="animate-fade-in">
             <div className="flex gap-2 mb-6">
@@ -95,43 +101,54 @@ const Admin = () => {
                 <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search activities..." className="pl-10" />
               </div>
             </div>
-            <div className="bg-card rounded-2xl border border-border overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/50">
-                      <th className="text-left p-4 font-medium text-muted-foreground">Activity</th>
-                      <th className="text-left p-4 font-medium text-muted-foreground hidden md:table-cell">Host</th>
-                      <th className="text-left p-4 font-medium text-muted-foreground hidden sm:table-cell">Category</th>
-                      <th className="text-left p-4 font-medium text-muted-foreground">Participants</th>
-                      <th className="text-left p-4 font-medium text-muted-foreground">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredActivities.map((a) => (
-                      <tr key={a.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                        <td className="p-4 font-medium">{a.title}</td>
-                        <td className="p-4 text-muted-foreground hidden md:table-cell">{a.hostName}</td>
-                        <td className="p-4 hidden sm:table-cell"><Badge variant="secondary">{a.category}</Badge></td>
-                        <td className="p-4 text-muted-foreground">{a.currentParticipants}/{a.participantLimit}</td>
-                        <td className="p-4">
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8"><Eye className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => toast('Activity removed')}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
+            {isLoading ? (
+              <div className="grid sm:grid-cols-2 gap-4">{Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}</div>
+            ) : (
+              <div className="bg-card rounded-2xl border border-border overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border bg-muted/50">
+                        <th className="text-left p-4 font-medium text-muted-foreground">Activity</th>
+                        <th className="text-left p-4 font-medium text-muted-foreground hidden md:table-cell">Host</th>
+                        <th className="text-left p-4 font-medium text-muted-foreground hidden sm:table-cell">Category</th>
+                        <th className="text-left p-4 font-medium text-muted-foreground">Participants</th>
+                        <th className="text-left p-4 font-medium text-muted-foreground">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {activities.map((a: ActivityType) => (
+                        <tr key={a.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                          <td className="p-4 font-medium">{a.title}</td>
+                          <td className="p-4 text-muted-foreground hidden md:table-cell">{a.users?.name ?? '—'}</td>
+                          <td className="p-4 hidden sm:table-cell"><Badge variant="secondary">{a.category}</Badge></td>
+                          <td className="p-4 text-muted-foreground">{a.current_participants}/{a.participant_limit}</td>
+                          <td className="p-4">
+                            <div className="flex gap-1">
+                              <Link to={`/activity/${a.id}`}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8"><Eye className="h-4 w-4" /></Button>
+                              </Link>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive"
+                                onClick={() => handleDelete(a.id)}
+                                disabled={deleteActivity.isPending}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
-        {/* Reports */}
         {activeTab === 'reports' && (
           <div className="animate-fade-in space-y-4">
             {reports.map((r) => (
@@ -144,11 +161,9 @@ const Admin = () => {
                   <p className="font-medium text-sm">{r.activity}</p>
                   <p className="text-xs text-muted-foreground">Reported by {r.reporter}</p>
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => toast.success('Report resolved')}>
-                    <CheckCircle className="h-4 w-4 mr-1" /> Resolve
-                  </Button>
-                </div>
+                <Button variant="outline" size="sm" onClick={() => toast.success('Report resolved')}>
+                  <CheckCircle className="h-4 w-4 mr-1" /> Resolve
+                </Button>
               </div>
             ))}
           </div>

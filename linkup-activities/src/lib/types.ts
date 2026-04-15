@@ -7,20 +7,20 @@ export interface Activity {
   time: string;
   city: string;
   location: string;
-  bannerImage: string;
-  hostId: string;
-  hostName: string;
-  hostAvatar: string;
-  participantLimit: number;
-  currentParticipants: number;
+  banner_image: string;
+  host_id: string;
+  // joined from users table
+  users?: { id: string; name: string; avatar: string };
+  participant_limit: number;
+  current_participants: number;
   difficulty: 'easy' | 'moderate' | 'intense';
   tags: string[];
-  isPublic: boolean;
-  safetyInstructions?: string;
+  is_public: boolean;
+  safety_instructions?: string;
   agenda?: string[];
   rules?: string[];
-  requiredItems?: string[];
-  createdAt: string;
+  required_items?: string[];
+  created_at: string;
 }
 
 export interface User {
@@ -29,9 +29,9 @@ export interface User {
   avatar: string;
   bio: string;
   interests: string[];
-  joinedDate: string;
-  activitiesHosted: number;
-  activitiesJoined: number;
+  joined_date: string;
+  activities_hosted: number;
+  activities_joined: number;
   streak: number;
   badges: Badge[];
 }
@@ -53,10 +53,10 @@ export interface Category {
 
 export interface Review {
   id: string;
-  userId: string;
-  userName: string;
-  userAvatar: string;
+  activity_id: string;
+  user_id: string;
+  users?: { id: string; name: string; avatar: string };
   rating: number;
   comment: string;
-  date: string;
+  created_at: string;
 }

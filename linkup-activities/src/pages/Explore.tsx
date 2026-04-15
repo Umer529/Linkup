@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,43 +6,50 @@ import { Badge } from '@/components/ui/badge';
 import ActivityCard from '@/components/ActivityCard';
 import SkeletonCard from '@/components/SkeletonCard';
 import EmptyState from '@/components/EmptyState';
-import { activities, categories } from '@/lib/mock-data';
+import { useActivities } from '@/hooks/useActivities';
+import { useCategories } from '@/hooks/useCategories';
+import { useSearchParams } from 'react-router-dom';
+import { useEffect } from 'react';
 
-const cities = ['All', 'San Francisco', 'New York', 'Los Angeles', 'Chicago', 'Austin', 'Portland', 'San Diego', 'Seattle'];
+const difficulties = ['easy', 'moderate', 'intense'];
 
 const Explore = () => {
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [selectedCity, setSelectedCity] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
+  const [selectedCity, setSelectedCity] = useState('');
+  const [selectedDifficulty, setSelectedDifficulty] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [loading] = useState(false);
 
-  const filtered = useMemo(() => {
-    return activities.filter((a) => {
-      const matchSearch = !search || a.title.toLowerCase().includes(search.toLowerCase()) || a.description.toLowerCase().includes(search.toLowerCase());
-      const matchCategory = selectedCategory === 'All' || a.category === selectedCategory;
-      const matchCity = selectedCity === 'All' || a.city === selectedCity;
-      return matchSearch && matchCategory && matchCity;
-    });
-  }, [search, selectedCategory, selectedCity]);
+  useEffect(() => {
+    const cat = searchParams.get('category');
+    if (cat) setSelectedCategory(cat);
+  }, [searchParams]);
+
+  const { data: categories = [] } = useCategories();
+  const { data: activities = [], isLoading } = useActivities({
+    search: search || undefined,
+    category: selectedCategory || undefined,
+    city: selectedCity || undefined,
+    difficulty: selectedDifficulty || undefined,
+  });
 
   const clearFilters = () => {
     setSearch('');
-    setSelectedCategory('All');
-    setSelectedCity('All');
+    setSelectedCategory('');
+    setSelectedCity('');
+    setSelectedDifficulty('');
   };
 
-  const hasFilters = search || selectedCategory !== 'All' || selectedCity !== 'All';
+  const hasFilters = search || selectedCategory || selectedCity || selectedDifficulty;
 
   return (
     <div className="min-h-screen pb-20 md:pb-0">
-      {/* Header */}
       <div className="bg-gradient-to-b from-primary/5 to-transparent">
         <div className="container mx-auto px-4 pt-8 pb-4">
           <h1 className="font-display text-2xl md:text-3xl font-bold mb-1">Explore Activities</h1>
           <p className="text-muted-foreground text-sm mb-6">Find your next adventure</p>
 
-          {/* Search */}
           <div className="flex gap-2 mb-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -62,20 +69,19 @@ const Explore = () => {
             </Button>
           </div>
 
-          {/* Filters */}
           {showFilters && (
             <div className="space-y-4 animate-fade-in pb-4">
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-2 block">Category</label>
                 <div className="flex flex-wrap gap-2">
                   <Badge
-                    variant={selectedCategory === 'All' ? 'default' : 'secondary'}
+                    variant={!selectedCategory ? 'default' : 'secondary'}
                     className="cursor-pointer"
-                    onClick={() => setSelectedCategory('All')}
+                    onClick={() => setSelectedCategory('')}
                   >
                     All
                   </Badge>
-                  {categories.map((c) => (
+                  {categories.map((c: { id: string; name: string; icon: string }) => (
                     <Badge
                       key={c.id}
                       variant={selectedCategory === c.name ? 'default' : 'secondary'}
@@ -88,19 +94,35 @@ const Explore = () => {
                 </div>
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-2 block">City</label>
+                <label className="text-xs font-medium text-muted-foreground mb-2 block">Difficulty</label>
                 <div className="flex flex-wrap gap-2">
-                  {cities.map((city) => (
+                  <Badge
+                    variant={!selectedDifficulty ? 'default' : 'secondary'}
+                    className="cursor-pointer"
+                    onClick={() => setSelectedDifficulty('')}
+                  >
+                    All
+                  </Badge>
+                  {difficulties.map((d) => (
                     <Badge
-                      key={city}
-                      variant={selectedCity === city ? 'default' : 'secondary'}
-                      className="cursor-pointer"
-                      onClick={() => setSelectedCity(city)}
+                      key={d}
+                      variant={selectedDifficulty === d ? 'default' : 'secondary'}
+                      className="cursor-pointer capitalize"
+                      onClick={() => setSelectedDifficulty(d)}
                     >
-                      {city}
+                      {d}
                     </Badge>
                   ))}
                 </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-2 block">City</label>
+                <Input
+                  placeholder="Filter by city..."
+                  value={selectedCity}
+                  onChange={(e) => setSelectedCity(e.target.value)}
+                  className="max-w-xs h-9 rounded-xl"
+                />
               </div>
             </div>
           )}
@@ -113,13 +135,12 @@ const Explore = () => {
         </div>
       </div>
 
-      {/* Results */}
       <div className="container mx-auto px-4 py-6">
-        {loading ? (
+        {isLoading ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
-        ) : filtered.length === 0 ? (
+        ) : activities.length === 0 ? (
           <EmptyState
             title="No activities found"
             description="Try adjusting your filters or search term"
@@ -127,9 +148,9 @@ const Explore = () => {
           />
         ) : (
           <>
-            <p className="text-sm text-muted-foreground mb-4">{filtered.length} activities found</p>
+            <p className="text-sm text-muted-foreground mb-4">{activities.length} activities found</p>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filtered.map((a) => (
+              {activities.map((a: import('@/lib/types').Activity) => (
                 <ActivityCard key={a.id} activity={a} />
               ))}
             </div>

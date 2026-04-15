@@ -1,82 +1,116 @@
 import { useState } from 'react';
-import { Calendar, Award, Flame, MapPin, Star } from 'lucide-react';
+import { Flame } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import ActivityCard from '@/components/ActivityCard';
-import { currentUser, activities } from '@/lib/mock-data';
+import SkeletonCard from '@/components/SkeletonCard';
+import EmptyState from '@/components/EmptyState';
+import { useUser, useUserActivities, useSavedActivities } from '@/hooks/useUser';
+import { useActivities } from '@/hooks/useActivities';
+import { Activity } from '@/lib/types';
 
-type Tab = 'upcoming' | 'hosted' | 'past' | 'saved';
+// Hardcoded for now — replace with real auth user id once auth is wired
+const CURRENT_USER_ID = 'replace-with-real-user-id';
+
+type Tab = 'upcoming' | 'hosted' | 'saved';
 
 const Profile = () => {
   const [tab, setTab] = useState<Tab>('upcoming');
 
+  const { data: user, isLoading: userLoading } = useUser(CURRENT_USER_ID);
+  const { data: hostedActivities = [], isLoading: hostedLoading } = useUserActivities(CURRENT_USER_ID);
+  const { data: savedActivities = [], isLoading: savedLoading } = useSavedActivities(CURRENT_USER_ID);
+  const { data: allActivities = [], isLoading: allLoading } = useActivities();
+
+  const upcomingActivities = allActivities.filter(
+    (a: Activity) => new Date(a.date) >= new Date()
+  );
+
   const tabs: { key: Tab; label: string }[] = [
     { key: 'upcoming', label: 'Upcoming' },
     { key: 'hosted', label: 'Hosted' },
-    { key: 'past', label: 'Past' },
     { key: 'saved', label: 'Saved' },
   ];
 
-  // Mock: just show different slices
-  const displayActivities = tab === 'hosted' ? activities.slice(0, 2) : tab === 'past' ? activities.slice(3, 5) : tab === 'saved' ? activities.slice(1, 4) : activities.slice(0, 3);
+  const displayActivities =
+    tab === 'hosted' ? hostedActivities :
+    tab === 'saved' ? savedActivities :
+    upcomingActivities;
+
+  const isLoading =
+    tab === 'hosted' ? hostedLoading :
+    tab === 'saved' ? savedLoading :
+    allLoading;
+
+  if (userLoading) {
+    return (
+      <div className="container mx-auto px-4 max-w-3xl pt-8">
+        <div className="grid sm:grid-cols-2 gap-6">{Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="container mx-auto px-4 py-20 text-center">
+        <p className="text-muted-foreground">User not found.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-20 md:pb-0">
       <div className="container mx-auto px-4 max-w-3xl pt-8">
-        {/* Profile Header */}
         <div className="flex flex-col items-center text-center mb-8 animate-fade-in">
           <img
-            src={currentUser.avatar}
-            alt={currentUser.name}
+            src={user.avatar}
+            alt={user.name}
             className="w-24 h-24 rounded-full object-cover ring-4 ring-primary/20 mb-4"
           />
-          <h1 className="font-display text-2xl font-bold">{currentUser.name}</h1>
-          <p className="text-sm text-muted-foreground mt-1 max-w-md">{currentUser.bio}</p>
+          <h1 className="font-display text-2xl font-bold">{user.name}</h1>
+          <p className="text-sm text-muted-foreground mt-1 max-w-md">{user.bio}</p>
 
-          {/* Stats */}
           <div className="flex gap-6 mt-6">
             <div className="text-center">
-              <div className="font-display text-xl font-bold">{currentUser.activitiesHosted}</div>
+              <div className="font-display text-xl font-bold">{user.activities_hosted}</div>
               <div className="text-xs text-muted-foreground">Hosted</div>
             </div>
             <div className="text-center">
-              <div className="font-display text-xl font-bold">{currentUser.activitiesJoined}</div>
+              <div className="font-display text-xl font-bold">{user.activities_joined}</div>
               <div className="text-xs text-muted-foreground">Joined</div>
             </div>
             <div className="text-center">
               <div className="font-display text-xl font-bold flex items-center gap-1">
-                <Flame className="h-5 w-5 text-primary" />{currentUser.streak}
+                <Flame className="h-5 w-5 text-primary" />{user.streak}
               </div>
               <div className="text-xs text-muted-foreground">Streak</div>
             </div>
           </div>
 
-          {/* Interests */}
           <div className="flex flex-wrap gap-2 justify-center mt-4">
-            {currentUser.interests.map((i) => (
+            {user.interests?.map((i: string) => (
               <Badge key={i} variant="secondary">{i}</Badge>
             ))}
           </div>
         </div>
 
-        {/* Badges */}
-        <div className="mb-8">
-          <h3 className="font-display font-semibold mb-3">Achievements</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {currentUser.badges.map((b) => (
-              <div key={b.id} className="bg-card rounded-xl border border-border p-3 text-center card-hover">
-                <div className="text-2xl mb-1">{b.icon}</div>
-                <div className="text-xs font-semibold">{b.name}</div>
-                <div className="text-[10px] text-muted-foreground">{b.description}</div>
-              </div>
-            ))}
+        {user.badges?.length > 0 && (
+          <div className="mb-8">
+            <h3 className="font-display font-semibold mb-3">Achievements</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {user.badges.map((b: { id: string; icon: string; name: string; description: string }) => (
+                <div key={b.id} className="bg-card rounded-xl border border-border p-3 text-center card-hover">
+                  <div className="text-2xl mb-1">{b.icon}</div>
+                  <div className="text-xs font-semibold">{b.name}</div>
+                  <div className="text-[10px] text-muted-foreground">{b.description}</div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <Separator className="mb-6" />
 
-        {/* Tabs */}
         <div className="flex gap-1 bg-muted rounded-xl p-1 mb-6">
           {tabs.map((t) => (
             <button
@@ -91,12 +125,15 @@ const Profile = () => {
           ))}
         </div>
 
-        {/* Activities */}
-        <div className="grid sm:grid-cols-2 gap-6 mb-8">
-          {displayActivities.map((a) => (
-            <ActivityCard key={a.id} activity={a} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="grid sm:grid-cols-2 gap-6">{Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}</div>
+        ) : displayActivities.length === 0 ? (
+          <EmptyState title="No activities yet" description="Activities will appear here once available." />
+        ) : (
+          <div className="grid sm:grid-cols-2 gap-6 mb-8">
+            {displayActivities.map((a: Activity) => <ActivityCard key={a.id} activity={a} />)}
+          </div>
+        )}
       </div>
     </div>
   );

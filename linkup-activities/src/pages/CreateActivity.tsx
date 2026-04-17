@@ -13,11 +13,25 @@ import { useCreateActivity } from '@/hooks/useActivities';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 
+const FALLBACK_CATEGORIES = [
+  { id: '1', name: 'Hiking', icon: '🥾' },
+  { id: '2', name: 'Photography', icon: '📸' },
+  { id: '3', name: 'Cooking', icon: '🍳' },
+  { id: '4', name: 'Sports', icon: '⚽' },
+  { id: '5', name: 'Music', icon: '🎵' },
+  { id: '6', name: 'Art', icon: '🎨' },
+  { id: '7', name: 'Gaming', icon: '🎮' },
+  { id: '8', name: 'Yoga', icon: '🧘' },
+  { id: '9', name: 'Book Club', icon: '📚' },
+  { id: '10', name: 'Volunteering', icon: '🤝' },
+];
+
 const steps = ['Basics', 'Details', 'Settings', 'Review'];
 
 const CreateActivity = () => {
   const navigate = useNavigate();
-  const { data: categories = [] } = useCategories();
+  const { data: apiCategories = [] } = useCategories();
+  const categories = apiCategories.length > 0 ? apiCategories : FALLBACK_CATEGORIES;
   const createActivity = useCreateActivity();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
@@ -134,7 +148,7 @@ const CreateActivity = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Date *</Label>
-                  <Input type="date" value={form.date} onChange={(e) => update('date', e.target.value)} className="mt-1.5" />
+                  <Input type="date" value={form.date} onChange={(e) => update('date', e.target.value)} className="mt-1.5" min={new Date().toISOString().split('T')[0]} />
                   {fieldError('date')}
                 </div>
                 <div>

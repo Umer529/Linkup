@@ -1,4 +1,4 @@
-const db = require('../database/client');
+const { supabase: db } = require('../database/client');
 
 const CategoryModel = {
   async findAll() {

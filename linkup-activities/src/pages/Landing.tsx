@@ -6,8 +6,22 @@ import { useCategories } from '@/hooks/useCategories';
 import { Category } from '@/lib/types';
 import SkeletonCard from '@/components/SkeletonCard';
 
+const FALLBACK_CATEGORIES = [
+  { id: '1', name: 'Hiking', icon: '🥾', count: 0, color: '' },
+  { id: '2', name: 'Photography', icon: '📸', count: 0, color: '' },
+  { id: '3', name: 'Cooking', icon: '🍳', count: 0, color: '' },
+  { id: '4', name: 'Sports', icon: '⚽', count: 0, color: '' },
+  { id: '5', name: 'Music', icon: '🎵', count: 0, color: '' },
+  { id: '6', name: 'Art', icon: '🎨', count: 0, color: '' },
+  { id: '7', name: 'Gaming', icon: '🎮', count: 0, color: '' },
+  { id: '8', name: 'Yoga', icon: '🧘', count: 0, color: '' },
+  { id: '9', name: 'Book Club', icon: '📚', count: 0, color: '' },
+  { id: '10', name: 'Volunteering', icon: '🤝', count: 0, color: '' },
+];
+
 const Landing = () => {
-  const { data: categories = [], isLoading: categoriesLoading } = useCategories();
+  const { data: apiCategories = [], isLoading: categoriesLoading } = useCategories();
+  const categories = apiCategories.length > 0 ? apiCategories : FALLBACK_CATEGORIES;
 
   return (
     <div className="min-h-screen">

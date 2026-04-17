@@ -27,12 +27,12 @@ const activityController = {
     if (!errors.isEmpty()) return res.status(422).json({ errors: errors.array() });
 
     try {
-      const { title, description, category, date, time, city, location, banner_image,
+      const { title, description, category, date, time, city, location,
         participant_limit, difficulty, tags, is_public, safety_instructions,
         agenda, rules, required_items } = req.body;
 
       const data = await ActivityModel.create({
-        title, description, category, date, time, city, location, banner_image,
+        title, description, category, date, time, city, location,
         host_id: req.user.id,
         participant_limit: participant_limit || 10,
         difficulty: difficulty || 'easy',

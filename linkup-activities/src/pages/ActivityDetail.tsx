@@ -9,12 +9,13 @@ import ActivityCard from '@/components/ActivityCard';
 import SkeletonCard from '@/components/SkeletonCard';
 import { useActivity, useJoinActivity, useLeaveActivity, useSaveActivity, useActivities } from '@/hooks/useActivities';
 import { useReviews, useCreateReview } from '@/hooks/useReviews';
+import { getCategoryMeta } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const difficultyConfig = {
-  easy: { label: 'Easy', color: 'bg-success/10 text-success' },
+  easy:     { label: 'Easy',     color: 'bg-success/10 text-success' },
   moderate: { label: 'Moderate', color: 'bg-warning/10 text-warning' },
-  intense: { label: 'Intense', color: 'bg-destructive/10 text-destructive' },
+  intense:  { label: 'Intense',  color: 'bg-destructive/10 text-destructive' },
 };
 
 const ActivityDetail = () => {
@@ -54,6 +55,7 @@ const ActivityDetail = () => {
   const isFull = activity.current_participants >= activity.participant_limit;
   const diff = difficultyConfig[activity.difficulty];
   const host = activity.users;
+  const meta = getCategoryMeta(activity.category);
   const similar = allActivities
     .filter((a: import('@/lib/types').Activity) => a.category === activity.category && a.id !== activity.id)
     .slice(0, 3);
@@ -67,11 +69,10 @@ const ActivityDetail = () => {
       } else {
         await joinMutation.mutateAsync();
         setJoined(true);
-        toast('🎉 You\'re in!');
+        toast("🎉 You're in!");
       }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Something went wrong';
-      toast.error(msg);
+      toast.error(e instanceof Error ? e.message : 'Something went wrong');
     }
   };
 
@@ -99,9 +100,12 @@ const ActivityDetail = () => {
 
   return (
     <div className="min-h-screen pb-20 md:pb-0">
-      <div className="relative h-64 md:h-96">
-        <img src={activity.banner_image} alt={activity.title} className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+
+      {/* Category gradient hero — no image needed */}
+      <div className={`relative h-48 md:h-64 bg-gradient-to-br ${meta.gradient} flex items-center justify-center overflow-hidden`}>
+        <span className="text-8xl md:text-9xl opacity-20 select-none">{meta.icon}</span>
+        <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+
         <div className="absolute top-4 left-4">
           <Link to="/explore">
             <Button variant="outline" size="sm" className="glass border-0">
@@ -109,24 +113,54 @@ const ActivityDetail = () => {
             </Button>
           </Link>
         </div>
+
+        {/* Category icon centered */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1">
+          <span className="text-4xl">{meta.icon}</span>
+          <span className="text-xs font-semibold text-white/80 uppercase tracking-widest">{activity.category}</span>
+        </div>
       </div>
 
-      <div className="container mx-auto px-4 -mt-16 relative max-w-4xl">
+      <div className="container mx-auto px-4 -mt-6 relative max-w-4xl">
         <div className="bg-card rounded-2xl border border-border p-6 md:p-8">
+
+          {/* Badges + title */}
           <div className="flex flex-wrap gap-2 mb-3">
             <Badge>{activity.category}</Badge>
             <Badge variant="secondary" className={diff.color}>{diff.label}</Badge>
+            {!activity.is_public && <Badge variant="outline">Private</Badge>}
             {isFull && <Badge variant="destructive">Full</Badge>}
           </div>
           <h1 className="font-display text-2xl md:text-3xl font-bold mb-4">{activity.title}</h1>
 
+          {/* Meta info */}
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-6">
-            <span className="flex items-center gap-1.5"><Calendar className="h-4 w-4" />{new Date(activity.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
+            <span className="flex items-center gap-1.5">
+              <Calendar className="h-4 w-4" />
+              {new Date(activity.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            </span>
             <span className="flex items-center gap-1.5"><Clock className="h-4 w-4" />{activity.time}</span>
             <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" />{activity.location}, {activity.city}</span>
-            <span className="flex items-center gap-1.5"><Users className="h-4 w-4" />{activity.current_participants}/{activity.participant_limit} joined</span>
+            <span className="flex items-center gap-1.5">
+              <Users className="h-4 w-4" />{activity.current_participants}/{activity.participant_limit} joined
+            </span>
           </div>
 
+          {/* Participant progress bar */}
+          <div className="mb-6">
+            <div className="flex justify-between text-xs text-muted-foreground mb-1">
+              <span>{activity.current_participants} joined</span>
+              <span>{activity.participant_limit - activity.current_participants} spots left</span>
+            </div>
+            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${isFull ? 'bg-destructive' : `bg-gradient-to-r ${meta.gradient}`}`}
+                style={{ width: `${Math.min((activity.current_participants / activity.participant_limit) * 100, 100)}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Actions */}
           <div className="flex gap-3 mb-8">
             <Button
               onClick={handleJoin}
@@ -139,16 +173,23 @@ const ActivityDetail = () => {
             <Button variant="outline" size="icon" onClick={handleSave} className="h-11 w-11">
               {saved ? <BookmarkCheck className="h-5 w-5 text-primary" /> : <Bookmark className="h-5 w-5" />}
             </Button>
-            <Button variant="outline" size="icon" onClick={() => { navigator.clipboard.writeText(window.location.href); toast('Link copied!'); }} className="h-11 w-11">
+            <Button
+              variant="outline" size="icon"
+              onClick={() => { navigator.clipboard.writeText(window.location.href); toast('Link copied!'); }}
+              className="h-11 w-11"
+            >
               <Share2 className="h-5 w-5" />
             </Button>
           </div>
 
           <Separator className="mb-6" />
 
+          {/* Host */}
           {host && (
             <div className="flex items-center gap-3 mb-6">
-              <img src={host.avatar} alt={host.name} className="w-12 h-12 rounded-full object-cover" />
+              <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${meta.gradient} flex items-center justify-center text-white font-bold text-lg`}>
+                {host.name.charAt(0).toUpperCase()}
+              </div>
               <div>
                 <p className="font-semibold text-sm">Hosted by {host.name}</p>
                 <p className="text-xs text-muted-foreground">Community leader</p>
@@ -156,11 +197,13 @@ const ActivityDetail = () => {
             </div>
           )}
 
+          {/* Description */}
           <div className="mb-8">
             <h3 className="font-display font-semibold mb-2">About this activity</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">{activity.description}</p>
           </div>
 
+          {/* Agenda */}
           {activity.agenda && activity.agenda.length > 0 && (
             <div className="mb-8">
               <h3 className="font-display font-semibold mb-3">Agenda</h3>
@@ -175,20 +218,21 @@ const ActivityDetail = () => {
             </div>
           )}
 
+          {/* Required items */}
           {activity.required_items && activity.required_items.length > 0 && (
             <div className="mb-8">
               <h3 className="font-display font-semibold mb-3">What to Bring</h3>
               <div className="grid grid-cols-2 gap-2">
                 {activity.required_items.map((item, i) => (
                   <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
-                    {item}
+                    <CheckCircle2 className="h-4 w-4 text-success shrink-0" />{item}
                   </div>
                 ))}
               </div>
             </div>
           )}
 
+          {/* Safety */}
           {activity.safety_instructions && (
             <div className="mb-8 p-4 bg-warning/5 rounded-xl border border-warning/20">
               <div className="flex items-center gap-2 mb-2">
@@ -199,6 +243,7 @@ const ActivityDetail = () => {
             </div>
           )}
 
+          {/* Rules */}
           {activity.rules && activity.rules.length > 0 && (
             <div className="mb-8">
               <h3 className="font-display font-semibold mb-3">Rules</h3>
@@ -212,6 +257,7 @@ const ActivityDetail = () => {
             </div>
           )}
 
+          {/* Tags */}
           {activity.tags && activity.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-8">
               {activity.tags.map((tag) => (
@@ -228,7 +274,9 @@ const ActivityDetail = () => {
             <div className="space-y-4 mb-6">
               {reviews.map((r: import('@/lib/types').Review) => (
                 <div key={r.id} className="flex gap-3">
-                  <img src={r.users?.avatar} alt={r.users?.name} className="w-9 h-9 rounded-full object-cover shrink-0" />
+                  <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${getCategoryMeta(activity.category).gradient} flex items-center justify-center text-white font-bold text-sm shrink-0`}>
+                    {r.users?.name?.charAt(0).toUpperCase() ?? '?'}
+                  </div>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm font-medium">{r.users?.name}</span>
@@ -272,6 +320,7 @@ const ActivityDetail = () => {
           </div>
         </div>
 
+        {/* Similar activities */}
         {similar.length > 0 && (
           <div className="mt-12 mb-8">
             <h3 className="font-display text-xl font-bold mb-6">Similar Activities</h3>

@@ -11,11 +11,24 @@ import { useCategories } from '@/hooks/useCategories';
 import { useSearchParams } from 'react-router-dom';
 import { useEffect } from 'react';
 
+const FALLBACK_CATEGORIES = [
+  { id: '1', name: 'Hiking', icon: '🥾' },
+  { id: '2', name: 'Photography', icon: '📸' },
+  { id: '3', name: 'Cooking', icon: '🍳' },
+  { id: '4', name: 'Sports', icon: '⚽' },
+  { id: '5', name: 'Music', icon: '🎵' },
+  { id: '6', name: 'Art', icon: '🎨' },
+  { id: '7', name: 'Gaming', icon: '🎮' },
+  { id: '8', name: 'Yoga', icon: '🧘' },
+  { id: '9', name: 'Book Club', icon: '📚' },
+  { id: '10', name: 'Volunteering', icon: '🤝' },
+];
+
 const difficulties = ['easy', 'moderate', 'intense'];
 
 const Explore = () => {
   const [searchParams] = useSearchParams();
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
   const [selectedCity, setSelectedCity] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState('');
@@ -23,10 +36,13 @@ const Explore = () => {
 
   useEffect(() => {
     const cat = searchParams.get('category');
+    const q = searchParams.get('search');
     if (cat) setSelectedCategory(cat);
+    if (q) setSearch(q);
   }, [searchParams]);
 
-  const { data: categories = [] } = useCategories();
+  const { data: apiCategories = [] } = useCategories();
+  const categories = apiCategories.length > 0 ? apiCategories : FALLBACK_CATEGORIES;
   const { data: activities = [], isLoading } = useActivities({
     search: search || undefined,
     category: selectedCategory || undefined,

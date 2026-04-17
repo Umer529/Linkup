@@ -7,9 +7,7 @@ export interface Activity {
   time: string;
   city: string;
   location: string;
-  banner_image: string;
   host_id: string;
-  // joined from users table
   users?: { id: string; name: string; avatar: string };
   participant_limit: number;
   current_participants: number;

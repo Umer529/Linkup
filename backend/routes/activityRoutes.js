@@ -11,7 +11,10 @@ const activityValidation = [
   body('title').trim().notEmpty().withMessage('Title is required'),
   body('description').trim().notEmpty().withMessage('Description is required'),
   body('category').trim().notEmpty().withMessage('Category is required'),
-  body('date').isDate().withMessage('Valid date is required'),
+  body('date').isDate().withMessage('Valid date is required').custom((val) => {
+    if (new Date(val) < new Date(new Date().toDateString())) throw new Error('Date cannot be in the past');
+    return true;
+  }),
   body('time').notEmpty().withMessage('Time is required'),
   body('city').trim().notEmpty().withMessage('City is required'),
   body('location').trim().notEmpty().withMessage('Location is required'),

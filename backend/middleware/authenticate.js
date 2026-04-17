@@ -1,13 +1,14 @@
-const db = require('../database/client');
+const { supabaseAuth } = require('../database/client');
 
 const authenticate = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Missing or invalid token' });
+    return res.status(401).json({ error: 'Missing token' });
   }
 
   const token = authHeader.split(' ')[1];
-  const { data, error } = await db.auth.getUser(token);
+  // Use anon client — it correctly populates user_metadata from the JWT
+  const { data, error } = await supabaseAuth.auth.getUser(token);
 
   if (error || !data?.user) {
     return res.status(401).json({ error: 'Unauthorized' });

@@ -4,6 +4,7 @@ import { Calendar, MapPin, Users, Bookmark, BookmarkCheck, Clock } from 'lucide-
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Activity } from '@/lib/types';
+import { getCategoryMeta } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useJoinActivity, useLeaveActivity, useSaveActivity } from '@/hooks/useActivities';
 
@@ -21,12 +22,12 @@ const ActivityCard = ({ activity }: ActivityCardProps) => {
   const [saved, setSaved] = useState(false);
   const [joined, setJoined] = useState(false);
   const isFull = activity.current_participants >= activity.participant_limit;
+  const meta = getCategoryMeta(activity.category);
+  const host = activity.users;
 
   const joinMutation = useJoinActivity(activity.id);
   const leaveMutation = useLeaveActivity(activity.id);
   const saveMutation = useSaveActivity(activity.id);
-
-  const host = activity.users;
 
   const handleSave = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -62,33 +63,40 @@ const ActivityCard = ({ activity }: ActivityCardProps) => {
   return (
     <Link to={`/activity/${activity.id}`} className="block">
       <div className="group bg-card rounded-2xl border border-border overflow-hidden card-hover">
-        <div className="relative overflow-hidden aspect-[16/10]">
-          <img
-            src={activity.banner_image}
-            alt={activity.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent" />
-          <div className="absolute top-3 left-3 flex gap-2">
+
+        {/* Category gradient header — replaces banner image */}
+        <div className={`relative h-28 bg-gradient-to-br ${meta.gradient} flex items-center justify-center overflow-hidden`}>
+          <span className="text-5xl opacity-80 group-hover:scale-110 transition-transform duration-300">
+            {meta.icon}
+          </span>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+
+          {/* Badges top-left */}
+          <div className="absolute top-3 left-3 flex gap-1.5">
             <Badge variant="secondary" className="glass text-xs font-medium">{activity.category}</Badge>
             <Badge variant="secondary" className={`text-xs font-medium border ${difficultyColors[activity.difficulty]}`}>
               {activity.difficulty}
             </Badge>
           </div>
+
+          {/* Save button top-right */}
           <button
             onClick={handleSave}
-            className="absolute top-3 right-3 p-2 rounded-full glass transition-all duration-200 hover:scale-110"
+            className="absolute top-3 right-3 p-1.5 rounded-full glass transition-all duration-200 hover:scale-110"
             aria-label={saved ? 'Unsave activity' : 'Save activity'}
           >
-            {saved ? <BookmarkCheck className="h-4 w-4 text-primary" /> : <Bookmark className="h-4 w-4 text-foreground" />}
+            {saved
+              ? <BookmarkCheck className="h-4 w-4 text-primary" />
+              : <Bookmark className="h-4 w-4 text-white" />}
           </button>
+
+          {/* Host bottom-left */}
           {host && (
-            <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
-              <div className="flex items-center gap-2">
-                <img src={host.avatar} alt={host.name} className="w-7 h-7 rounded-full object-cover ring-2 ring-background" />
-                <span className="text-xs font-medium text-primary-foreground">{host.name}</span>
+            <div className="absolute bottom-2 left-3 flex items-center gap-1.5">
+              <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-bold text-white ring-1 ring-white/40">
+                {host.name.charAt(0).toUpperCase()}
               </div>
+              <span className="text-xs font-medium text-white/90">{host.name}</span>
             </div>
           )}
         </div>

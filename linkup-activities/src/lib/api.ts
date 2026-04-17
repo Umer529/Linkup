@@ -11,6 +11,23 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// ── Auth ─────────────────────────────────────────────────────
+export const sendOtp = (email: string) =>
+  api.post('/auth/send-otp', { email }).then((r) => r.data);
+
+export const verifyOtp = (email: string, token: string) =>
+  api.post('/auth/verify-otp', { email, token }).then((r) => r.data);
+
+export const refreshToken = (refresh_token: string) =>
+  api.post('/auth/refresh', { refresh_token }).then((r) => r.data);
+
+export const fetchMe = () =>
+  api.get('/auth/me').then((r) => r.data.data);
+
+// Google OAuth — handled entirely client-side via Supabase JS
+export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
 // ── Activities ──────────────────────────────────────────────
 export interface ActivityFilters {
   category?: string;

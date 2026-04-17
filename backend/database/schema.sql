@@ -30,7 +30,7 @@ CREATE TABLE activities (
   time TIME NOT NULL,
   city TEXT NOT NULL,
   location TEXT NOT NULL,
-  banner_image TEXT,
+  banner_image TEXT, -- kept nullable; not used by the app, no upload feature
   host_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   participant_limit INT NOT NULL DEFAULT 10,
   current_participants INT NOT NULL DEFAULT 0,
@@ -86,3 +86,11 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_participant_count
 AFTER INSERT OR DELETE ON participants
 FOR EACH ROW EXECUTE FUNCTION update_participant_count();
+
+-- Disable RLS on all tables (backend uses service_role key with its own auth middleware)
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE activities DISABLE ROW LEVEL SECURITY;
+ALTER TABLE categories DISABLE ROW LEVEL SECURITY;
+ALTER TABLE participants DISABLE ROW LEVEL SECURITY;
+ALTER TABLE saved_activities DISABLE ROW LEVEL SECURITY;
+ALTER TABLE reviews DISABLE ROW LEVEL SECURITY;

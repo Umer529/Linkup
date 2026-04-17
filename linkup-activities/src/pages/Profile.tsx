@@ -8,13 +8,13 @@ import EmptyState from '@/components/EmptyState';
 import { useUser, useUserActivities, useSavedActivities } from '@/hooks/useUser';
 import { useActivities } from '@/hooks/useActivities';
 import { Activity } from '@/lib/types';
-
-// Hardcoded for now — replace with real auth user id once auth is wired
-const CURRENT_USER_ID = 'replace-with-real-user-id';
+import { useAuth } from '@/context/AuthContext';
 
 type Tab = 'upcoming' | 'hosted' | 'saved';
 
 const Profile = () => {
+  const { user: authUser } = useAuth();
+  const CURRENT_USER_ID = authUser?.id ?? '';
   const [tab, setTab] = useState<Tab>('upcoming');
 
   const { data: user, isLoading: userLoading } = useUser(CURRENT_USER_ID);

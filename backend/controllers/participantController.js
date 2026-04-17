@@ -1,6 +1,6 @@
 const ParticipantModel = require('../models/participantModel');
 const ActivityModel = require('../models/activityModel');
-const db = require('../database/client');
+const { supabase: db } = require('../database/client');
 
 const participantController = {
   async join(req, res) {

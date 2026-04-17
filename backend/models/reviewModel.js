@@ -1,4 +1,4 @@
-const db = require('../database/client');
+const { supabase: db } = require('../database/client');
 
 const ReviewModel = {
   async findByActivity(activityId) {

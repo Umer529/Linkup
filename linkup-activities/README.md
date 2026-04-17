@@ -1,3 +1,6 @@
-# Welcome to your Lovable project
+# Welcome to LinkUp
 
-TODO: Document your project here
+## This is the frontend
+
+use npm run dev to set frontend up. 
+

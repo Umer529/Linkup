@@ -65,8 +65,7 @@ const authController = {
       const userId = req.user.id;
       const meta = req.user.user_metadata || {};
 
-      // upsert so both Google and email OTP users are handled
-      const { data, error } = await db.from('users').upsert({
+      const userPayload = {
         id: userId,
         name: meta.full_name || meta.name || req.user.email?.split('@')[0] || 'User',
         avatar: meta.avatar_url || meta.picture || null,
@@ -74,12 +73,25 @@ const authController = {
         activities_hosted: 0,
         activities_joined: 0,
         streak: 0,
-      }, { onConflict: 'id', ignoreDuplicates: true }).select().single();
+      };
 
+      const { error: upsertError } = await db.from('users').upsert(userPayload, {
+        onConflict: 'id',
+        ignoreDuplicates: true,
+      });
+      if (upsertError) throw upsertError;
+
+      const { data, error } = await db
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
       if (error) throw error;
+
       res.json({ data });
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      console.error('Auth /me error:', err);
+      res.status(500).json({ error: err.message || 'Unexpected server error' });
     }
   },
 };

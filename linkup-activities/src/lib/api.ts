@@ -104,4 +104,20 @@ export const fetchMessages = (activityId: string) =>
 export const sendMessage = (activityId: string, content: string) =>
   api.post(`/activities/${activityId}/messages`, { content }).then((r) => r.data.data);
 
+// ── Calls ───────────────────────────────────────────────────
+export const startCall = (activityId: string) =>
+  api.post(`/calls/activity/${activityId}/start`).then((r) => r.data);
+
+export const getCall = (activityId: string) =>
+  api.get(`/calls/activity/${activityId}`).then((r) => r.data);
+
+export const endCall = (callId: string) =>
+  api.put(`/calls/${callId}/end`).then((r) => r.data);
+
+export const sendSignal = (callId: string, type: string, data: any) =>
+  api.post(`/calls/${callId}/signal`, { type, data }).then((r) => r.data);
+
+export const getSignals = (callId: string) =>
+  api.get(`/calls/${callId}/signals`).then((r) => r.data);
+
 export default api;

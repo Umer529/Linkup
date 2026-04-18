@@ -7,6 +7,7 @@ const activityRoutes = require('./routes/activityRoutes');
 const userRoutes = require('./routes/userRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const authRoutes = require('./routes/authRoutes');
+const callRoutes = require('./routes/callRoutes');
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/api/activities', activityRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/calls', callRoutes);
 
 app.get('/health', (_, res) => res.json({ status: 'ok' }));
 

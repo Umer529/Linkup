@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Users, Clock, Bookmark, BookmarkCheck, ArrowLeft, Share2, Star, CheckCircle2, AlertTriangle, Send, MessageCircle } from 'lucide-react';
+import { Calendar, MapPin, Users, Clock, Bookmark, BookmarkCheck, ArrowLeft, Share2, Star, CheckCircle2, AlertTriangle, Send, MessageCircle, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -188,6 +188,14 @@ const ActivityDetail = () => {
               title="Activity Chat"
             >
               <MessageCircle className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="outline" size="icon"
+              onClick={() => navigate(`/activity/${id}/video`)}
+              className="h-11 w-11"
+              title="Video Call"
+            >
+              <Video className="h-5 w-5" />
             </Button>
           </div>
 

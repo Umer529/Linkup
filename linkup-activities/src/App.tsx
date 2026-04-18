@@ -13,6 +13,7 @@ import Explore from "./pages/Explore";
 import CreateActivity from "./pages/CreateActivity";
 import ActivityDetail from "./pages/ActivityDetail";
 import ActivityChat from "./pages/ActivityChat";
+import ActivityVideoCall from "./pages/ActivityVideoCall";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
 import Login from "./pages/Login";
@@ -41,6 +42,7 @@ const AppInner = () => {
         <Route path="/explore" element={<Explore />} />
         <Route path="/activity/:id" element={<ActivityDetail />} />
         <Route path="/activity/:id/chat" element={<ProtectedRoute><ActivityChat /></ProtectedRoute>} />
+        <Route path="/activity/:id/video" element={<ProtectedRoute><ActivityVideoCall /></ProtectedRoute>} />
         <Route path="/login" element={<Login />} />
         <Route path="/verify" element={<Verify />} />
         <Route path="/auth/callback" element={<AuthCallback />} />

@@ -105,3 +105,23 @@ CREATE TABLE messages (
 );
 
 ALTER TABLE messages DISABLE ROW LEVEL SECURITY;
+
+-- Video calls
+CREATE TABLE calls (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  activity_id UUID NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
+  host_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT CHECK (status IN ('waiting', 'active', 'ended')) DEFAULT 'waiting',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE signals (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  call_id UUID NOT NULL REFERENCES calls(id) ON DELETE CASCADE,
+  type TEXT CHECK (type IN ('offer', 'answer', 'candidate')) NOT NULL,
+  data JSONB NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE calls DISABLE ROW LEVEL SECURITY;
+ALTER TABLE signals DISABLE ROW LEVEL SECURITY;

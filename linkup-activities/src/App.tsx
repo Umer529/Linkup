@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +12,7 @@ import Index from "./pages/Index";
 import Explore from "./pages/Explore";
 import CreateActivity from "./pages/CreateActivity";
 import ActivityDetail from "./pages/ActivityDetail";
+import ActivityChat from "./pages/ActivityChat";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
 import Login from "./pages/Login";
@@ -29,6 +30,31 @@ const queryClient = new QueryClient({
   },
 });
 
+const AppInner = () => {
+  const location = useLocation();
+  const isChat = location.pathname.endsWith('/chat');
+  return (
+    <>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/explore" element={<Explore />} />
+        <Route path="/activity/:id" element={<ActivityDetail />} />
+        <Route path="/activity/:id/chat" element={<ProtectedRoute><ActivityChat /></ProtectedRoute>} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/verify" element={<Verify />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/create" element={<ProtectedRoute><CreateActivity /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      {!isChat && <Footer />}
+      {!isChat && <MobileNav />}
+    </>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -36,21 +62,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
-          <Navbar />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/explore" element={<Explore />} />
-            <Route path="/activity/:id" element={<ActivityDetail />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/verify" element={<Verify />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/create" element={<ProtectedRoute><CreateActivity /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <Footer />
-          <MobileNav />
+          <AppInner />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

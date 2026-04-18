@@ -58,3 +58,12 @@ export interface Review {
   comment: string;
   created_at: string;
 }
+
+export interface Message {
+  id: string;
+  activity_id: string;
+  user_id: string;
+  users?: { id: string; name: string; avatar: string };
+  content: string;
+  created_at: string;
+}

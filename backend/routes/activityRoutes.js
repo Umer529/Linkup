@@ -2,6 +2,7 @@ const { Router } = require('express');
 const activityController = require('../controllers/activityController');
 const participantController = require('../controllers/participantController');
 const reviewController = require('../controllers/reviewController');
+const chatController = require('../controllers/chatController');
 const authenticate = require('../middleware/authenticate');
 const { body } = require('express-validator');
 
@@ -41,5 +42,9 @@ router.delete('/:id/save', authenticate, participantController.unsaveActivity);
 router.get('/:id/reviews', reviewController.getByActivity);
 router.post('/:id/reviews', authenticate, reviewController.create);
 router.delete('/:id/reviews/:reviewId', authenticate, reviewController.remove);
+
+// Chat
+router.get('/:id/messages', authenticate, chatController.getMessages);
+router.post('/:id/messages', authenticate, chatController.sendMessage);
 
 module.exports = router;

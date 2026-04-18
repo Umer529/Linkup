@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Calendar, MapPin, Users, Clock, Bookmark, BookmarkCheck, ArrowLeft, Share2, Star, CheckCircle2, AlertTriangle, Send } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Calendar, MapPin, Users, Clock, Bookmark, BookmarkCheck, ArrowLeft, Share2, Star, CheckCircle2, AlertTriangle, Send, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -20,6 +20,7 @@ const difficultyConfig = {
 
 const ActivityDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { data: activity, isLoading } = useActivity(id!);
   const { data: reviews = [] } = useReviews(id!);
   const { data: allActivities = [] } = useActivities();
@@ -179,6 +180,14 @@ const ActivityDetail = () => {
               className="h-11 w-11"
             >
               <Share2 className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="outline" size="icon"
+              onClick={() => navigate(`/activity/${id}/chat`)}
+              className="h-11 w-11"
+              title="Activity Chat"
+            >
+              <MessageCircle className="h-5 w-5" />
             </Button>
           </div>
 

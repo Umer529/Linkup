@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, MapPin, Users, Bookmark, BookmarkCheck, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,8 @@ import { useJoinActivity, useLeaveActivity, useSaveActivity } from '@/hooks/useA
 
 interface ActivityCardProps {
   activity: Activity;
+  isJoined?: boolean;
+  isSaved?: boolean;
 }
 
 const difficultyColors = {
@@ -18,9 +20,18 @@ const difficultyColors = {
   intense: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
-const ActivityCard = ({ activity }: ActivityCardProps) => {
-  const [saved, setSaved] = useState(false);
-  const [joined, setJoined] = useState(false);
+const ActivityCard = ({ activity, isJoined, isSaved }: ActivityCardProps) => {
+  const [saved, setSaved] = useState(isSaved ?? false);
+  const [joined, setJoined] = useState(isJoined ?? false);
+
+  useEffect(() => {
+    if (isJoined !== undefined) setJoined(isJoined);
+  }, [isJoined]);
+
+  useEffect(() => {
+    if (isSaved !== undefined) setSaved(isSaved);
+  }, [isSaved]);
+
   const isFull = activity.current_participants >= activity.participant_limit;
   const meta = getCategoryMeta(activity.category);
   const host = activity.users;
@@ -31,32 +42,45 @@ const ActivityCard = ({ activity }: ActivityCardProps) => {
 
   const handleSave = async (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    const prevSaved = saved;
+    setSaved(!saved);
     try {
       await saveMutation.mutateAsync(saved);
-      setSaved(!saved);
       toast(saved ? 'Removed from saved' : 'Activity saved!', {
         description: saved ? undefined : 'Find it in your profile',
       });
     } catch {
+      setSaved(prevSaved);
       toast.error('Could not save activity');
     }
   };
 
   const handleJoin = async (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     if (isFull && !joined) return;
+    const prevJoined = joined;
     try {
       if (joined) {
-        await leaveMutation.mutateAsync();
         setJoined(false);
+        await leaveMutation.mutateAsync();
         toast('Left activity');
       } else {
-        await joinMutation.mutateAsync();
         setJoined(true);
+        await joinMutation.mutateAsync();
         toast(`🎉 You're in!`, { description: `You joined "${activity.title}"` });
       }
-    } catch {
-      toast.error('Could not update participation');
+    } catch (err: unknown) {
+      const error = err as { response?: { status?: number; data?: { error?: string } } };
+      const errorMsg = error?.response?.data?.error || 'Could not update participation';
+      if (error?.response?.status === 409 && errorMsg === 'Already joined') {
+        setJoined(true);
+        toast.info('You are already in this activity');
+      } else {
+        setJoined(prevJoined);
+        toast.error(errorMsg);
+      }
     }
   };
 

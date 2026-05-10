@@ -26,12 +26,24 @@ const UserModel = {
   },
 
   async getSavedActivities(userId) {
-    const { data, error } = await db
+    // Step 1: get saved activity IDs
+    const { data: rows, error: rowsError } = await db
       .from('saved_activities')
-      .select('*, activities(*)')
+      .select('activity_id')
       .eq('user_id', userId);
-    if (error) throw error;
-    return data.map((r) => r.activities);
+    if (rowsError) throw rowsError;
+    if (!rows || rows.length === 0) return [];
+
+    const activityIds = rows.map((r) => r.activity_id);
+
+    // Step 2: fetch full activity data including host
+    const { data: acts, error: actsError } = await db
+      .from('activities')
+      .select('*, users(id, name, avatar)')
+      .in('id', activityIds)
+      .order('date', { ascending: true });
+    if (actsError) throw actsError;
+    return acts || [];
   },
 };
 

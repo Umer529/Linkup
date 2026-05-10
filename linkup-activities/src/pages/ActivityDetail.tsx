@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Calendar, MapPin, Users, Clock, Bookmark, BookmarkCheck, ArrowLeft, Share2, Star, CheckCircle2, AlertTriangle, Send, MessageCircle, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,8 +7,10 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import ActivityCard from '@/components/ActivityCard';
 import SkeletonCard from '@/components/SkeletonCard';
-import { useActivity, useJoinActivity, useLeaveActivity, useSaveActivity, useActivities } from '@/hooks/useActivities';
+import { useActivity, useJoinActivity, useLeaveActivity, useSaveActivity, useActivities, useParticipants } from '@/hooks/useActivities';
 import { useReviews, useCreateReview } from '@/hooks/useReviews';
+import { useAuth } from '@/context/AuthContext';
+import { useJoinedActivities, useSavedActivities } from '@/hooks/useUser';
 import { getCategoryMeta } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -21,9 +23,15 @@ const difficultyConfig = {
 const ActivityDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: activity, isLoading } = useActivity(id!);
   const { data: reviews = [] } = useReviews(id!);
+  const { data: participants = [], isLoading: participantsLoading } = useParticipants(id!);
   const { data: allActivities = [] } = useActivities();
+  const { data: joinedActivities = [] } = useJoinedActivities(user?.id ?? '');
+  const { data: savedActivities = [] } = useSavedActivities(user?.id ?? '');
+  const joinedIdsSet = new Set((joinedActivities as import('@/lib/types').Activity[]).map((a) => a.id));
+  const savedIdsSet = new Set((savedActivities as import('@/lib/types').Activity[]).map((a) => a.id));
 
   const [joined, setJoined] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -34,6 +42,14 @@ const ActivityDetail = () => {
   const leaveMutation = useLeaveActivity(id!);
   const saveMutation = useSaveActivity(id!);
   const createReview = useCreateReview(id!);
+
+  // Determine if user is already a participant or the host
+  useEffect(() => {
+    if (!user || !activity) return;
+    const isHost = activity.host_id === user.id;
+    const isParticipant = Array.isArray(participants) && participants.some((p: any) => p.user_id === user.id);
+    setJoined(isHost || isParticipant);
+  }, [user, activity, participants]);
 
   if (isLoading) {
     return (
@@ -73,7 +89,16 @@ const ActivityDetail = () => {
         toast("🎉 You're in!");
       }
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : 'Something went wrong');
+      const error = e as { response?: { status?: number; data?: { error?: string } } };
+      const errorMsg = error?.response?.data?.error || 'Something went wrong';
+      
+      // If user is already joined, update UI to reflect that
+      if (error?.response?.status === 409 && errorMsg === 'Already joined') {
+        setJoined(true);
+        toast.info('You are already in this activity');
+      } else {
+        toast.error(errorMsg);
+      }
     }
   };
 
@@ -165,11 +190,11 @@ const ActivityDetail = () => {
           <div className="flex gap-3 mb-8">
             <Button
               onClick={handleJoin}
-              disabled={(isFull && !joined) || joinMutation.isPending || leaveMutation.isPending}
+              disabled={(isFull && !joined) || joinMutation.isPending || leaveMutation.isPending || participantsLoading}
               className={`flex-1 h-11 ${!joined ? 'gradient-bg text-primary-foreground border-0 btn-glow' : ''}`}
               variant={joined ? 'outline' : 'default'}
             >
-              {joined ? 'Leave Activity' : isFull ? 'Activity Full' : 'Join Activity'}
+              {participantsLoading ? 'Loading...' : joined ? 'Leave Activity' : isFull ? 'Activity Full' : 'Join Activity'}
             </Button>
             <Button variant="outline" size="icon" onClick={handleSave} className="h-11 w-11">
               {saved ? <BookmarkCheck className="h-5 w-5 text-primary" /> : <Bookmark className="h-5 w-5" />}
@@ -342,7 +367,14 @@ const ActivityDetail = () => {
           <div className="mt-12 mb-8">
             <h3 className="font-display text-xl font-bold mb-6">Similar Activities</h3>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {similar.map((a: import('@/lib/types').Activity) => <ActivityCard key={a.id} activity={a} />)}
+              {similar.map((a: import('@/lib/types').Activity) => (
+                <ActivityCard
+                  key={a.id}
+                  activity={a}
+                  isJoined={joinedIdsSet.has(a.id)}
+                  isSaved={savedIdsSet.has(a.id)}
+                />
+              ))}
             </div>
           </div>
         )}

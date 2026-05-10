@@ -1,4 +1,5 @@
 const UserModel = require('../models/userModel');
+const ParticipantModel = require('../models/participantModel');
 
 const userController = {
   async getOne(req, res) {
@@ -36,6 +37,16 @@ const userController = {
     try {
       if (req.params.id !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
       const data = await UserModel.getSavedActivities(req.params.id);
+      res.json({ data });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+  async getJoined(req, res) {
+    try {
+      if (req.params.id !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+      const data = await ParticipantModel.getJoinedActivities(req.user.id);
       res.json({ data });
     } catch (err) {
       res.status(500).json({ error: err.message });

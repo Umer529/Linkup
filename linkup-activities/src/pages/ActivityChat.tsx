@@ -16,6 +16,7 @@ const ActivityChat = () => {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isNotParticipant, setIsNotParticipant] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Load message history
@@ -23,7 +24,13 @@ const ActivityChat = () => {
     if (!id || !token) return;
     fetchMessages(id)
       .then((data) => setMessages(data ?? []))
-      .catch((err) => setError(err?.response?.data?.error || 'Failed to load messages'));
+      .catch((err) => {
+        const errorMsg = err?.response?.data?.error || 'Failed to load messages';
+        if (errorMsg === 'Not a participant') {
+          setIsNotParticipant(true);
+        }
+        setError(errorMsg);
+      });
   }, [id, token]);
 
   // Supabase Realtime subscription
@@ -98,66 +105,78 @@ const ActivityChat = () => {
         <h2 className="font-display font-semibold text-base">Activity Chat</h2>
       </div>
 
-      {/* Error banner */}
-      {error && (
+      {/* Not a participant message */}
+      {isNotParticipant && (
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 px-4">
+          <p className="text-muted-foreground text-center">You must join this activity to see and send messages.</p>
+          <Button onClick={() => navigate(`/activity/${id}`)}>Go Back & Join</Button>
+        </div>
+      )}
+
+      {/* Error banner (for other errors) */}
+      {error && !isNotParticipant && (
         <div className="px-4 py-2 bg-destructive/10 text-destructive text-xs text-center">
           {error}
         </div>
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-        {messages.length === 0 && (
-          <p className="text-center text-sm text-muted-foreground mt-10">
-            No messages yet. Say hello! 👋
-          </p>
-        )}
-        {messages.map((msg) => {
-          const isMe = msg.user_id === user?.id;
-          return (
-            <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-              {!isMe && (
-                <span className="text-xs text-muted-foreground mb-1 ml-1">
-                  {msg.users?.name ?? 'Unknown'}
-                </span>
-              )}
-              <div
-                className={`max-w-[75%] px-4 py-2 rounded-2xl text-sm break-words ${
-                  isMe
-                    ? 'bg-green-500 text-white rounded-br-sm'
-                    : 'bg-muted text-foreground rounded-bl-sm'
-                }`}
-              >
-                {msg.content}
-              </div>
-              <span className="text-[10px] text-muted-foreground mt-0.5 mx-1">
-                {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
-          );
-        })}
-        <div ref={bottomRef} />
-      </div>
+      {!isNotParticipant && (
+        <>
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+            {messages.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground mt-10">
+                No messages yet. Say hello! 👋
+              </p>
+            )}
+            {messages.map((msg) => {
+              const isMe = msg.user_id === user?.id;
+              return (
+                <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                  {!isMe && (
+                    <span className="text-xs text-muted-foreground mb-1 ml-1">
+                      {msg.users?.name ?? 'Unknown'}
+                    </span>
+                  )}
+                  <div
+                    className={`max-w-[75%] px-4 py-2 rounded-2xl text-sm break-words ${
+                      isMe
+                        ? 'bg-green-500 text-white rounded-br-sm'
+                        : 'bg-muted text-foreground rounded-bl-sm'
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                  <span className="text-[10px] text-muted-foreground mt-0.5 mx-1">
+                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              );
+            })}
+            <div ref={bottomRef} />
+          </div>
 
-      {/* Input */}
-      <div className="px-4 py-3 border-t border-border bg-card flex gap-2">
-        <Input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Type a message..."
-          className="flex-1"
-          disabled={sending}
-        />
-        <Button
-          onClick={send}
-          disabled={!input.trim() || sending}
-          size="icon"
-          className="gradient-bg text-primary-foreground border-0"
-        >
-          <Send className="h-4 w-4" />
-        </Button>
-      </div>
+          {/* Input */}
+          <div className="px-4 py-3 border-t border-border bg-card flex gap-2">
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a message..."
+              className="flex-1"
+              disabled={sending}
+            />
+            <Button
+              onClick={send}
+              disabled={!input.trim() || sending}
+              size="icon"
+              className="gradient-bg text-primary-foreground border-0"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 };

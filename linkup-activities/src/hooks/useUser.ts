@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchUser, updateUser, fetchUserActivities, fetchSavedActivities } from '@/lib/api';
+import { fetchUser, updateUser, fetchUserActivities, fetchSavedActivities, fetchJoinedActivities } from '@/lib/api';
 
 export const useUser = (id: string) =>
   useQuery({
@@ -20,6 +20,17 @@ export const useSavedActivities = (userId: string) =>
     queryKey: ['savedActivities', userId],
     queryFn: () => fetchSavedActivities(userId),
     enabled: !!userId,
+    staleTime: 0,       // always refetch on mount so save state is never stale
+    refetchOnMount: true,
+  });
+
+export const useJoinedActivities = (userId: string) =>
+  useQuery({
+    queryKey: ['joinedActivities', userId],
+    queryFn: () => fetchJoinedActivities(userId),
+    enabled: !!userId,
+    staleTime: 0,       // always refetch on mount so join state is never stale
+    refetchOnMount: true,
   });
 
 export const useUpdateUser = (id: string) => {

@@ -8,8 +8,11 @@ import SkeletonCard from '@/components/SkeletonCard';
 import EmptyState from '@/components/EmptyState';
 import { useActivities } from '@/hooks/useActivities';
 import { useCategories } from '@/hooks/useCategories';
+import { useJoinedActivities, useSavedActivities } from '@/hooks/useUser';
+import { useAuth } from '@/context/AuthContext';
 import { useSearchParams } from 'react-router-dom';
 import { useEffect } from 'react';
+import { Activity } from '@/lib/types';
 
 const FALLBACK_CATEGORIES = [
   { id: '1', name: 'Hiking', icon: '🥾' },
@@ -33,6 +36,13 @@ const Explore = () => {
   const [selectedCity, setSelectedCity] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+
+  const { user: authUser } = useAuth();
+  const userId = authUser?.id ?? '';
+  const { data: joinedActivities = [] } = useJoinedActivities(userId);
+  const { data: savedActivities = [] } = useSavedActivities(userId);
+  const joinedIdsSet = new Set((joinedActivities as Activity[]).map((a) => a.id));
+  const savedIdsSet = new Set((savedActivities as Activity[]).map((a) => a.id));
 
   useEffect(() => {
     const cat = searchParams.get('category');
@@ -166,8 +176,13 @@ const Explore = () => {
           <>
             <p className="text-sm text-muted-foreground mb-4">{activities.length} activities found</p>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {activities.map((a: import('@/lib/types').Activity) => (
-                <ActivityCard key={a.id} activity={a} />
+              {activities.map((a: Activity) => (
+                <ActivityCard
+                  key={a.id}
+                  activity={a}
+                  isJoined={joinedIdsSet.has(a.id)}
+                  isSaved={savedIdsSet.has(a.id)}
+                />
               ))}
             </div>
           </>

@@ -31,6 +31,8 @@ export const useParticipants = (id: string) =>
     queryKey: ['participants', id],
     queryFn: () => fetchParticipants(id),
     enabled: !!id,
+    refetchOnMount: 'stale',
+    staleTime: 0,
   });
 
 export const useCreateActivity = () => {
@@ -64,7 +66,11 @@ export const useJoinActivity = (id: string) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => joinActivity(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['activity', id] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['activity', id] });
+      qc.invalidateQueries({ queryKey: ['participants', id] });
+      qc.invalidateQueries({ queryKey: ['joinedActivities'] });
+    },
   });
 };
 
@@ -72,7 +78,11 @@ export const useLeaveActivity = (id: string) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => leaveActivity(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['activity', id] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['activity', id] });
+      qc.invalidateQueries({ queryKey: ['participants', id] });
+      qc.invalidateQueries({ queryKey: ['joinedActivities'] });
+    },
   });
 };
 
@@ -80,6 +90,10 @@ export const useSaveActivity = (id: string) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (saved: boolean) => (saved ? unsaveActivity(id) : saveActivity(id)),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['activity', id] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['activity', id] });
+      qc.invalidateQueries({ queryKey: ['activities'] });
+      qc.invalidateQueries({ queryKey: ['savedActivities'] });
+    },
   });
 };

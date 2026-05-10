@@ -97,6 +97,9 @@ export const fetchUserActivities = (userId: string) =>
 export const fetchSavedActivities = (userId: string) =>
   api.get(`/users/${userId}/saved`).then((r) => r.data.data);
 
+export const fetchJoinedActivities = (userId: string) =>
+  api.get(`/users/${userId}/joined`).then((r) => r.data.data);
+
 // ── Chat ─────────────────────────────────────────────────────
 export const fetchMessages = (activityId: string) =>
   api.get(`/activities/${activityId}/messages`).then((r) => r.data.data);

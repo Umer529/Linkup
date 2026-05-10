@@ -9,6 +9,7 @@ router.get('/:id', userController.getOne);
 router.post('/', userController.create);
 router.put('/:id', authenticate, userController.update);
 router.get('/:id/saved', authenticate, userController.getSaved);
+router.get('/:id/joined', authenticate, userController.getJoined);
 router.get('/:userId/activities', activityController.getByHost);
 
 module.exports = router;

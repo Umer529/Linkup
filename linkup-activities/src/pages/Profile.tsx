@@ -5,8 +5,7 @@ import { Separator } from '@/components/ui/separator';
 import ActivityCard from '@/components/ActivityCard';
 import SkeletonCard from '@/components/SkeletonCard';
 import EmptyState from '@/components/EmptyState';
-import { useUser, useUserActivities, useSavedActivities } from '@/hooks/useUser';
-import { useActivities } from '@/hooks/useActivities';
+import { useUser, useUserActivities, useSavedActivities, useJoinedActivities } from '@/hooks/useUser';
 import { Activity } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 
@@ -20,11 +19,14 @@ const Profile = () => {
   const { data: user, isLoading: userLoading } = useUser(CURRENT_USER_ID);
   const { data: hostedActivities = [], isLoading: hostedLoading } = useUserActivities(CURRENT_USER_ID);
   const { data: savedActivities = [], isLoading: savedLoading } = useSavedActivities(CURRENT_USER_ID);
-  const { data: allActivities = [], isLoading: allLoading } = useActivities();
+  const { data: joinedActivities = [], isLoading: joinedLoading } = useJoinedActivities(CURRENT_USER_ID);
 
-  const upcomingActivities = allActivities.filter(
+  const upcomingActivities = (joinedActivities as Activity[]).filter(
     (a: Activity) => new Date(a.date) >= new Date()
   );
+
+  const joinedIdsSet = new Set((joinedActivities as Activity[]).map((a) => a.id));
+  const savedIdsSet = new Set((savedActivities as Activity[]).map((a) => a.id));
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'upcoming', label: 'Upcoming' },
@@ -40,7 +42,7 @@ const Profile = () => {
   const isLoading =
     tab === 'hosted' ? hostedLoading :
     tab === 'saved' ? savedLoading :
-    allLoading;
+    joinedLoading;
 
   if (userLoading) {
     return (
@@ -131,7 +133,14 @@ const Profile = () => {
           <EmptyState title="No activities yet" description="Activities will appear here once available." />
         ) : (
           <div className="grid sm:grid-cols-2 gap-6 mb-8">
-            {displayActivities.map((a: Activity) => <ActivityCard key={a.id} activity={a} />)}
+            {displayActivities.map((a: Activity) => (
+              <ActivityCard
+                key={a.id}
+                activity={a}
+                isJoined={tab === 'upcoming' ? true : joinedIdsSet.has(a.id)}
+                isSaved={tab === 'saved' ? true : savedIdsSet.has(a.id)}
+              />
+            ))}
           </div>
         )}
       </div>

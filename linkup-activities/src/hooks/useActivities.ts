@@ -39,7 +39,11 @@ export const useCreateActivity = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: createActivity,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['activities'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['activities'] });
+      qc.invalidateQueries({ queryKey: ['joinedActivities'] });
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+    },
   });
 };
 
@@ -70,6 +74,7 @@ export const useJoinActivity = (id: string) => {
       qc.invalidateQueries({ queryKey: ['activity', id] });
       qc.invalidateQueries({ queryKey: ['participants', id] });
       qc.invalidateQueries({ queryKey: ['joinedActivities'] });
+      qc.invalidateQueries({ queryKey: ['notifications'] });
     },
   });
 };

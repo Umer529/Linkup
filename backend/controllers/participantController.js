@@ -1,5 +1,7 @@
 const ParticipantModel = require('../models/participantModel');
 const ActivityModel = require('../models/activityModel');
+const NotificationModel = require('../models/notificationModel');
+const UserModel = require('../models/userModel');
 const { supabase: db } = require('../database/client');
 
 const participantController = {
@@ -14,6 +16,24 @@ const participantController = {
       if (already) return res.status(409).json({ error: 'Already joined' });
 
       const data = await ParticipantModel.join(req.params.id, req.user.id);
+
+      // Notify host when someone else joins their activity
+      if (req.user.id !== activity.host_id) {
+        try {
+          const joiningUser = await UserModel.findById(req.user.id);
+          await NotificationModel.create({
+            user_id: activity.host_id,
+            type: 'participant_joined',
+            title: 'New participant!',
+            message: `${joiningUser.name} joined your activity "${activity.title}"`,
+            activity_id: activity.id,
+            actor_id: req.user.id,
+          });
+        } catch (e) {
+          console.error('Participant notification failed:', e.message);
+        }
+      }
+
       res.status(201).json({ data });
     } catch (err) {
       res.status(500).json({ error: err.message });

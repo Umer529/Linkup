@@ -51,11 +51,16 @@ const ParticipantModel = {
 
     const activityIds = rows.map((r) => r.activity_id);
 
-    // Step 2: fetch full activity data (same pattern as activityModel.findAll)
+    // Step 2: fetch activities — include up to 7 days past (for the Past tab)
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 7);
+    const cutoffStr = cutoff.toISOString().split('T')[0];
+
     const { data: acts, error: actsError } = await db
       .from('activities')
       .select('*, users(id, name, avatar)')
       .in('id', activityIds)
+      .gte('date', cutoffStr)
       .order('date', { ascending: true });
     if (actsError) throw actsError;
     return acts || [];

@@ -9,7 +9,7 @@ import { useUser, useUserActivities, useSavedActivities, useJoinedActivities } f
 import { Activity } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 
-type Tab = 'upcoming' | 'hosted' | 'saved';
+type Tab = 'upcoming' | 'hosted' | 'saved' | 'past';
 
 const Profile = () => {
   const { user: authUser } = useAuth();
@@ -21,8 +21,14 @@ const Profile = () => {
   const { data: savedActivities = [], isLoading: savedLoading } = useSavedActivities(CURRENT_USER_ID);
   const { data: joinedActivities = [], isLoading: joinedLoading } = useJoinedActivities(CURRENT_USER_ID);
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   const upcomingActivities = (joinedActivities as Activity[]).filter(
-    (a: Activity) => new Date(a.date) >= new Date()
+    (a: Activity) => new Date(a.date) >= today
+  );
+  const pastActivities = (joinedActivities as Activity[]).filter(
+    (a: Activity) => new Date(a.date) < today
   );
 
   const joinedIdsSet = new Set((joinedActivities as Activity[]).map((a) => a.id));
@@ -32,16 +38,18 @@ const Profile = () => {
     { key: 'upcoming', label: 'Upcoming' },
     { key: 'hosted', label: 'Hosted' },
     { key: 'saved', label: 'Saved' },
+    { key: 'past', label: 'Past' },
   ];
 
   const displayActivities =
-    tab === 'hosted' ? hostedActivities :
-    tab === 'saved' ? savedActivities :
+    tab === 'hosted'   ? (hostedActivities as Activity[]) :
+    tab === 'saved'    ? (savedActivities as Activity[]) :
+    tab === 'past'     ? pastActivities :
     upcomingActivities;
 
   const isLoading =
     tab === 'hosted' ? hostedLoading :
-    tab === 'saved' ? savedLoading :
+    tab === 'saved'  ? savedLoading :
     joinedLoading;
 
   if (userLoading) {
@@ -130,15 +138,23 @@ const Profile = () => {
         {isLoading ? (
           <div className="grid sm:grid-cols-2 gap-6">{Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}</div>
         ) : displayActivities.length === 0 ? (
-          <EmptyState title="No activities yet" description="Activities will appear here once available." />
+          <EmptyState
+            title={tab === 'past' ? 'No past activities' : 'No activities yet'}
+            description={
+              tab === 'past'
+                ? 'Activities you attended will appear here for 7 days.'
+                : 'Activities will appear here once available.'
+            }
+          />
         ) : (
           <div className="grid sm:grid-cols-2 gap-6 mb-8">
             {displayActivities.map((a: Activity) => (
               <ActivityCard
                 key={a.id}
                 activity={a}
-                isJoined={tab === 'upcoming' ? true : joinedIdsSet.has(a.id)}
+                isJoined={tab === 'upcoming' || tab === 'past' ? true : joinedIdsSet.has(a.id)}
                 isSaved={tab === 'saved' ? true : savedIdsSet.has(a.id)}
+                isOwner={tab === 'hosted' ? true : a.host_id === authUser?.id}
               />
             ))}
           </div>

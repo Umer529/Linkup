@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, Users, Bookmark, BookmarkCheck, Clock } from 'lucide-react';
+import { Calendar, MapPin, Users, Bookmark, BookmarkCheck, Clock, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Activity } from '@/lib/types';
@@ -12,6 +12,7 @@ interface ActivityCardProps {
   activity: Activity;
   isJoined?: boolean;
   isSaved?: boolean;
+  isOwner?: boolean;
 }
 
 const difficultyColors = {
@@ -20,7 +21,7 @@ const difficultyColors = {
   intense: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
-const ActivityCard = ({ activity, isJoined, isSaved }: ActivityCardProps) => {
+const ActivityCard = ({ activity, isJoined, isSaved, isOwner }: ActivityCardProps) => {
   const [saved, setSaved] = useState(isSaved ?? false);
   const [joined, setJoined] = useState(isJoined ?? false);
 
@@ -88,7 +89,7 @@ const ActivityCard = ({ activity, isJoined, isSaved }: ActivityCardProps) => {
     <Link to={`/activity/${activity.id}`} className="block">
       <div className="group bg-card rounded-2xl border border-border overflow-hidden card-hover">
 
-        {/* Category gradient header — replaces banner image */}
+        {/* Category gradient header */}
         <div className={`relative h-28 bg-gradient-to-br ${meta.gradient} flex items-center justify-center overflow-hidden`}>
           <span className="text-5xl opacity-80 group-hover:scale-110 transition-transform duration-300">
             {meta.icon}
@@ -141,17 +142,24 @@ const ActivityCard = ({ activity, isJoined, isSaved }: ActivityCardProps) => {
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Users className="h-3.5 w-3.5" />
               <span>{activity.current_participants}/{activity.participant_limit}</span>
-              {isFull && <Badge variant="secondary" className="text-[10px] ml-1">Full</Badge>}
+              {isFull && !isOwner && <Badge variant="secondary" className="text-[10px] ml-1">Full</Badge>}
             </div>
-            <Button
-              size="sm"
-              onClick={handleJoin}
-              disabled={(isFull && !joined) || joinMutation.isPending || leaveMutation.isPending}
-              variant={joined ? 'outline' : 'default'}
-              className={`text-xs h-8 ${!joined && !isFull ? 'gradient-bg border-0 text-primary-foreground btn-glow' : ''}`}
-            >
-              {joined ? 'Joined ✓' : isFull ? 'Full' : 'Join'}
-            </Button>
+            {isOwner ? (
+              <div className="flex items-center gap-1 text-xs font-semibold text-primary bg-primary/10 border border-primary/20 rounded-lg px-2.5 py-1.5">
+                <Crown className="h-3.5 w-3.5" />
+                Owner
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                onClick={handleJoin}
+                disabled={(isFull && !joined) || joinMutation.isPending || leaveMutation.isPending}
+                variant={joined ? 'outline' : 'default'}
+                className={`text-xs h-8 ${!joined && !isFull ? 'gradient-bg border-0 text-primary-foreground btn-glow' : ''}`}
+              >
+                {joined ? 'Joined ✓' : isFull ? 'Full' : 'Join'}
+              </Button>
+            )}
           </div>
         </div>
       </div>

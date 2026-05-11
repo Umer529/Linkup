@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Users, Clock, Bookmark, BookmarkCheck, ArrowLeft, Share2, Star, CheckCircle2, AlertTriangle, Send, MessageCircle, Video } from 'lucide-react';
+import { Calendar, MapPin, Users, Clock, Bookmark, BookmarkCheck, ArrowLeft, Share2, Star, CheckCircle2, AlertTriangle, Send, MessageCircle, Video, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -43,13 +43,19 @@ const ActivityDetail = () => {
   const saveMutation = useSaveActivity(id!);
   const createReview = useCreateReview(id!);
 
-  // Determine if user is already a participant or the host
+  const isOwner = !!user && !!activity && activity.host_id === user.id;
+
+  // Sync joined state from server (participants list or joined activities cache)
   useEffect(() => {
     if (!user || !activity) return;
-    const isHost = activity.host_id === user.id;
     const isParticipant = Array.isArray(participants) && participants.some((p: any) => p.user_id === user.id);
-    setJoined(isHost || isParticipant);
-  }, [user, activity, participants]);
+    setJoined(isOwner || isParticipant || joinedIdsSet.has(id!));
+  }, [user, activity, participants, joinedActivities]);
+
+  // Sync saved state from server cache
+  useEffect(() => {
+    if (id) setSaved(savedIdsSet.has(id));
+  }, [savedActivities, id]);
 
   if (isLoading) {
     return (
@@ -73,8 +79,8 @@ const ActivityDetail = () => {
   const diff = difficultyConfig[activity.difficulty];
   const host = activity.users;
   const meta = getCategoryMeta(activity.category);
-  const similar = allActivities
-    .filter((a: import('@/lib/types').Activity) => a.category === activity.category && a.id !== activity.id)
+  const similar = (allActivities as import('@/lib/types').Activity[])
+    .filter((a) => a.category === activity.category && a.id !== activity.id)
     .slice(0, 3);
 
   const handleJoin = async () => {
@@ -91,8 +97,6 @@ const ActivityDetail = () => {
     } catch (e: unknown) {
       const error = e as { response?: { status?: number; data?: { error?: string } } };
       const errorMsg = error?.response?.data?.error || 'Something went wrong';
-      
-      // If user is already joined, update UI to reflect that
       if (error?.response?.status === 409 && errorMsg === 'Already joined') {
         setJoined(true);
         toast.info('You are already in this activity');
@@ -103,11 +107,13 @@ const ActivityDetail = () => {
   };
 
   const handleSave = async () => {
+    const prevSaved = saved;
+    setSaved(!saved);
     try {
       await saveMutation.mutateAsync(saved);
-      setSaved(!saved);
       toast(saved ? 'Removed from saved' : 'Saved!');
     } catch {
+      setSaved(prevSaved);
       toast.error('Could not save activity');
     }
   };
@@ -127,7 +133,7 @@ const ActivityDetail = () => {
   return (
     <div className="min-h-screen pb-20 md:pb-0">
 
-      {/* Category gradient hero — no image needed */}
+      {/* Category gradient hero */}
       <div className={`relative h-48 md:h-64 bg-gradient-to-br ${meta.gradient} flex items-center justify-center overflow-hidden`}>
         <span className="text-8xl md:text-9xl opacity-20 select-none">{meta.icon}</span>
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
@@ -140,7 +146,6 @@ const ActivityDetail = () => {
           </Link>
         </div>
 
-        {/* Category icon centered */}
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1">
           <span className="text-4xl">{meta.icon}</span>
           <span className="text-xs font-semibold text-white/80 uppercase tracking-widest">{activity.category}</span>
@@ -155,7 +160,12 @@ const ActivityDetail = () => {
             <Badge>{activity.category}</Badge>
             <Badge variant="secondary" className={diff.color}>{diff.label}</Badge>
             {!activity.is_public && <Badge variant="outline">Private</Badge>}
-            {isFull && <Badge variant="destructive">Full</Badge>}
+            {isFull && !isOwner && <Badge variant="destructive">Full</Badge>}
+            {isOwner && (
+              <Badge className="bg-primary/10 text-primary border-primary/20 gap-1">
+                <Crown className="h-3 w-3" /> Owner
+              </Badge>
+            )}
           </div>
           <h1 className="font-display text-2xl md:text-3xl font-bold mb-4">{activity.title}</h1>
 
@@ -188,14 +198,21 @@ const ActivityDetail = () => {
 
           {/* Actions */}
           <div className="flex gap-3 mb-8">
-            <Button
-              onClick={handleJoin}
-              disabled={(isFull && !joined) || joinMutation.isPending || leaveMutation.isPending || participantsLoading}
-              className={`flex-1 h-11 ${!joined ? 'gradient-bg text-primary-foreground border-0 btn-glow' : ''}`}
-              variant={joined ? 'outline' : 'default'}
-            >
-              {participantsLoading ? 'Loading...' : joined ? 'Leave Activity' : isFull ? 'Activity Full' : 'Join Activity'}
-            </Button>
+            {isOwner ? (
+              <div className="flex-1 h-11 flex items-center justify-center rounded-xl bg-primary/5 border border-primary/20 gap-2">
+                <Crown className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-primary">You're the Owner</span>
+              </div>
+            ) : (
+              <Button
+                onClick={handleJoin}
+                disabled={(isFull && !joined) || joinMutation.isPending || leaveMutation.isPending || participantsLoading}
+                className={`flex-1 h-11 ${!joined ? 'gradient-bg text-primary-foreground border-0 btn-glow' : ''}`}
+                variant={joined ? 'outline' : 'default'}
+              >
+                {participantsLoading ? 'Loading...' : joined ? 'Leave Activity' : isFull ? 'Activity Full' : 'Join Activity'}
+              </Button>
+            )}
             <Button variant="outline" size="icon" onClick={handleSave} className="h-11 w-11">
               {saved ? <BookmarkCheck className="h-5 w-5 text-primary" /> : <Bookmark className="h-5 w-5" />}
             </Button>
@@ -373,6 +390,7 @@ const ActivityDetail = () => {
                   activity={a}
                   isJoined={joinedIdsSet.has(a.id)}
                   isSaved={savedIdsSet.has(a.id)}
+                  isOwner={a.host_id === user?.id}
                 />
               ))}
             </div>

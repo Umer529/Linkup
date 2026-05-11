@@ -182,6 +182,7 @@ const Explore = () => {
                   activity={a}
                   isJoined={joinedIdsSet.has(a.id)}
                   isSaved={savedIdsSet.has(a.id)}
+                  isOwner={a.host_id === authUser?.id}
                 />
               ))}
             </div>

@@ -125,3 +125,18 @@ CREATE TABLE signals (
 
 ALTER TABLE calls DISABLE ROW LEVEL SECURITY;
 ALTER TABLE signals DISABLE ROW LEVEL SECURITY;
+
+-- Notifications
+CREATE TABLE notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type TEXT NOT NULL CHECK (type IN ('activity_created', 'participant_joined', 'activity_reminder', 'activity_updated')),
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  activity_id UUID REFERENCES activities(id) ON DELETE CASCADE,
+  actor_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE notifications DISABLE ROW LEVEL SECURITY;

@@ -1,4 +1,6 @@
 const ActivityModel = require('../models/activityModel');
+const ParticipantModel = require('../models/participantModel');
+const NotificationModel = require('../models/notificationModel');
 const { validationResult } = require('express-validator');
 
 const activityController = {
@@ -40,6 +42,27 @@ const activityController = {
         is_public: is_public !== undefined ? is_public : true,
         safety_instructions, agenda, rules, required_items,
       });
+
+      // Auto-join creator as first participant
+      try {
+        await ParticipantModel.join(data.id, req.user.id);
+      } catch (e) {
+        console.error('Auto-join creator failed:', e.message);
+      }
+
+      // Notify creator that their activity is live
+      try {
+        await NotificationModel.create({
+          user_id: req.user.id,
+          type: 'activity_created',
+          title: 'Activity Published!',
+          message: `Your activity "${data.title}" is now live and discoverable by others.`,
+          activity_id: data.id,
+        });
+      } catch (e) {
+        console.error('Create notification failed:', e.message);
+      }
+
       res.status(201).json({ data });
     } catch (err) {
       res.status(500).json({ error: err.message });

@@ -107,6 +107,16 @@ export const fetchMessages = (activityId: string) =>
 export const sendMessage = (activityId: string, content: string) =>
   api.post(`/activities/${activityId}/messages`, { content }).then((r) => r.data.data);
 
+// ── Notifications ────────────────────────────────────────────
+export const fetchNotifications = () =>
+  api.get('/notifications').then((r) => r.data.data);
+
+export const markNotificationRead = (id: string) =>
+  api.patch(`/notifications/${id}/read`).then((r) => r.data.data);
+
+export const markAllNotificationsRead = () =>
+  api.patch('/notifications/read-all').then((r) => r.data);
+
 // ── Calls ───────────────────────────────────────────────────
 export const startCall = (activityId: string) =>
   api.post(`/calls/activity/${activityId}/start`).then((r) => r.data);

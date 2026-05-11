@@ -67,3 +67,15 @@ export interface Message {
   content: string;
   created_at: string;
 }
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: 'activity_created' | 'participant_joined' | 'activity_reminder' | 'activity_updated';
+  title: string;
+  message: string;
+  activity_id: string | null;
+  actor_id: string | null;
+  is_read: boolean;
+  created_at: string;
+}

@@ -1,47 +1,47 @@
-# 🌐 ActivityConnect
+#  ActivityConnect
 
-## 📌 Overview
+##  Overview
 ActivityConnect is a web platform that helps people discover and join real-world activities. It focuses on **activities over profiles**, encouraging offline interaction and community building.
 
 ---
 
-## 🎯 Objectives
+##  Objectives
 - Discover activities based on shared interests  
 - Create and post activities  
 - Promote real-life social connections  
 
 ---
 
-## ⚠️ Problem
+##  Problem
 Most social media platforms prioritize online engagement, making it hard to find and connect with people for real-world activities.
 
-### 💡 Solution
+###  Solution
 An **activity-first platform** that connects people through shared interests and encourages offline participation.
 
 ---
 
-## 🚀 Features
+##  Features
 - Create and browse activity posts  
 - Discover events  
 - Simple, activity-focused interface  
 
 ---
 
-## 🧩 Scope
+##  Scope
 - Social networking / community platform  
 - Inspired by Meetup & Facebook Events  
 
-### ❌ Excludes
+###  Excludes
 - Dating, chat, payments, mobile app, advanced location  
 
-### 🔮 Future Work
+###  Future Work
 - User accounts  
 - Real-time chat  
 - Mobile support  
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 - **Frontend:** React, JavaScript  
 - **Backend:** Supabase  
 - **Database:** PostgreSQL  
@@ -49,8 +49,8 @@ An **activity-first platform** that connects people through shared interests and
 
 ---
 
-## ⚙️ Setup
+##  Setup
 ```bash
-git clone <repo-url>
+git clone https://github.com/Umer529/Linkup
 npm install
 npm run dev

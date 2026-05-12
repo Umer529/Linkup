@@ -133,4 +133,17 @@ export const sendSignal = (callId: string, type: string, data: any) =>
 export const getSignals = (callId: string) =>
   api.get(`/calls/${callId}/signals`).then((r) => r.data);
 
+// ── Admin ─────────────────────────────────────────────────────
+export const fetchAdminStats = () =>
+  api.get('/admin/stats').then((r) => r.data.data);
+
+export const fetchAdminEngagement = () =>
+  api.get('/admin/engagement').then((r) => r.data.data);
+
+export const fetchAdminReports = () =>
+  api.get('/admin/reports').then((r) => r.data.data);
+
+export const resolveReport = (id: string) =>
+  api.patch(`/admin/reports/${id}/resolve`).then((r) => r.data.data);
+
 export default api;

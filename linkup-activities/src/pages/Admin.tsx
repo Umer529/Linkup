@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Users, Activity, Flag, BarChart3, Search, Eye, Trash2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,28 +7,46 @@ import { Badge } from '@/components/ui/badge';
 import SkeletonCard from '@/components/SkeletonCard';
 import { useActivities, useDeleteActivity } from '@/hooks/useActivities';
 import { Activity as ActivityType } from '@/lib/types';
+import { fetchAdminStats, fetchAdminEngagement, fetchAdminReports, resolveReport } from '@/lib/api';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 
-const stats = [
-  { label: 'Total Users', value: '12,483', icon: Users, change: '+12%' },
-  { label: 'Active Activities', value: '3,247', icon: Activity, change: '+8%' },
-  { label: 'Reports', value: '23', icon: Flag, change: '-5%' },
-  { label: 'Engagement', value: '89%', icon: BarChart3, change: '+3%' },
-];
-
-const reports = [
-  { id: '1', type: 'Spam', activity: 'Free Money Event', reporter: 'User #432', status: 'pending' },
-  { id: '2', type: 'Inappropriate', activity: 'Late Night Meetup', reporter: 'User #891', status: 'pending' },
-  { id: '3', type: 'Safety', activity: 'Extreme Cliff Jumping', reporter: 'User #127', status: 'reviewed' },
-];
+const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'activities' | 'reports'>('overview');
   const [search, setSearch] = useState('');
+  const qc = useQueryClient();
 
   const { data: activities = [], isLoading } = useActivities({ search: search || undefined });
   const deleteActivity = useDeleteActivity();
+
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ['adminStats'],
+    queryFn: fetchAdminStats,
+    refetchInterval: 60_000,
+  });
+
+  const { data: engagement = [], isLoading: engagementLoading } = useQuery({
+    queryKey: ['adminEngagement'],
+    queryFn: fetchAdminEngagement,
+    refetchInterval: 60_000,
+  });
+
+  const { data: reports = [], isLoading: reportsLoading } = useQuery({
+    queryKey: ['adminReports'],
+    queryFn: fetchAdminReports,
+  });
+
+  const resolveReportMutation = useMutation({
+    mutationFn: resolveReport,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['adminReports'] });
+      qc.invalidateQueries({ queryKey: ['adminStats'] });
+      toast.success('Report resolved');
+    },
+    onError: () => toast.error('Failed to resolve report'),
+  });
 
   const handleDelete = async (id: string) => {
     try {
@@ -37,6 +56,22 @@ const Admin = () => {
       toast.error('Failed to remove activity');
     }
   };
+
+  // Normalize engagement counts to percentages for the bar chart
+  const engagementCounts = engagement.map((e: { count: number }) => e.count);
+  const maxCount = Math.max(...engagementCounts, 1);
+  const engagementBars = engagementCounts.map((c: number) => Math.round((c / maxCount) * 100) || 4);
+
+  const statCards = [
+    { label: 'Total Users', value: statsLoading ? '…' : (stats?.users ?? 0).toLocaleString(), icon: Users },
+    { label: 'Active Activities', value: statsLoading ? '…' : (stats?.activities ?? 0).toLocaleString(), icon: Activity },
+    { label: 'Pending Reports', value: statsLoading ? '…' : (stats?.reports ?? 0).toLocaleString(), icon: Flag },
+    {
+      label: 'Avg Daily Joins',
+      value: engagementLoading ? '…' : Math.round(engagementCounts.reduce((a: number, b: number) => a + b, 0) / 7).toLocaleString(),
+      icon: BarChart3,
+    },
+  ];
 
   return (
     <div className="min-h-screen pb-20 md:pb-0">
@@ -61,7 +96,7 @@ const Admin = () => {
         {activeTab === 'overview' && (
           <div className="animate-fade-in">
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              {stats.map((s) => {
+              {statCards.map((s) => {
                 const Icon = s.icon;
                 return (
                   <div key={s.label} className="bg-card rounded-2xl border border-border p-5 card-hover">
@@ -69,7 +104,6 @@ const Admin = () => {
                       <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                         <Icon className="h-5 w-5 text-primary" />
                       </div>
-                      <Badge variant="secondary" className="text-xs text-success">{s.change}</Badge>
                     </div>
                     <div className="font-display text-2xl font-bold">{s.value}</div>
                     <div className="text-xs text-muted-foreground">{s.label}</div>
@@ -78,16 +112,29 @@ const Admin = () => {
               })}
             </div>
             <div className="bg-card rounded-2xl border border-border p-6 mb-8">
-              <h3 className="font-display font-semibold mb-4">User Engagement (Last 7 Days)</h3>
+              <h3 className="font-display font-semibold mb-4">Activity Joins (Last 7 Days)</h3>
               <div className="flex items-end gap-2 h-40">
-                {[65, 78, 52, 90, 85, 72, 95].map((v, i) => (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                    <div className="w-full rounded-t-lg gradient-bg transition-all" style={{ height: `${v}%` }} />
-                    <span className="text-[10px] text-muted-foreground">
-                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i]}
-                    </span>
-                  </div>
-                ))}
+                {engagementLoading
+                  ? Array.from({ length: 7 }).map((_, i) => (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                        <div className="w-full rounded-t-lg bg-muted animate-pulse" style={{ height: '40%' }} />
+                        <span className="text-[10px] text-muted-foreground">{DAY_LABELS[i]}</span>
+                      </div>
+                    ))
+                  : engagementBars.map((v: number, i: number) => (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                        <div
+                          className="w-full rounded-t-lg gradient-bg transition-all"
+                          style={{ height: `${v}%` }}
+                          title={`${engagementCounts[i]} join${engagementCounts[i] !== 1 ? 's' : ''}`}
+                        />
+                        <span className="text-[10px] text-muted-foreground">
+                          {engagement[i]
+                            ? new Date(engagement[i].day).toLocaleDateString('en-US', { weekday: 'short' })
+                            : DAY_LABELS[i]}
+                        </span>
+                      </div>
+                    ))}
               </div>
             </div>
           </div>
@@ -151,21 +198,38 @@ const Admin = () => {
 
         {activeTab === 'reports' && (
           <div className="animate-fade-in space-y-4">
-            {reports.map((r) => (
-              <div key={r.id} className="bg-card rounded-2xl border border-border p-5 flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Badge variant={r.status === 'pending' ? 'destructive' : 'secondary'}>{r.status}</Badge>
-                    <Badge variant="outline">{r.type}</Badge>
-                  </div>
-                  <p className="font-medium text-sm">{r.activity}</p>
-                  <p className="text-xs text-muted-foreground">Reported by {r.reporter}</p>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => toast.success('Report resolved')}>
-                  <CheckCircle className="h-4 w-4 mr-1" /> Resolve
-                </Button>
+            {reportsLoading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="bg-card rounded-2xl border border-border p-5 h-20 animate-pulse" />
+              ))
+            ) : reports.length === 0 ? (
+              <div className="bg-card rounded-2xl border border-border p-10 text-center text-muted-foreground text-sm">
+                No reports found.
               </div>
-            ))}
+            ) : (
+              reports.map((r: { id: string; type: string; activities?: { title: string }; users?: { name: string }; status: string }) => (
+                <div key={r.id} className="bg-card rounded-2xl border border-border p-5 flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant={r.status === 'pending' ? 'destructive' : 'secondary'}>{r.status}</Badge>
+                      <Badge variant="outline">{r.type}</Badge>
+                    </div>
+                    <p className="font-medium text-sm">{r.activities?.title ?? '—'}</p>
+                    <p className="text-xs text-muted-foreground">Reported by {r.users?.name ?? 'Unknown'}</p>
+                  </div>
+                  {r.status === 'pending' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => resolveReportMutation.mutate(r.id)}
+                      disabled={resolveReportMutation.isPending}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-1" /> Resolve
+                    </Button>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>
